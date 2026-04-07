@@ -85,9 +85,9 @@ function announceTicket(ticket, moduleId) {
     const letter = ticket.charAt(0);
     const number = ticket.slice(1); // Mantenemos el formato original por si tiene ceros
 
-    // Para mejorar la dicción robótica, agregamos pausas (comas, puntos) 
-    // y palabras explícitas.
-    const message = `Turno. Letra, ${letter}... número, ${number}. Pasar al módulo, ${moduleId}.`;
+    // Mantenemos las pausas (puntos y comas) para mejor dicción,
+    // pero quitamos las palabras 'letra' y 'número' a petición del usuario.
+    const message = `Turno... ${letter}, ${number}. Pasar al módulo... ${moduleId}.`;
 
     const utterance = new SpeechSynthesisUtterance(message);
     utterance.lang = 'es-ES';
