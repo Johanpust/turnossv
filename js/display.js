@@ -121,6 +121,11 @@ function renderModules(state) {
             statusLabel = 'ATENDIENDO';
             statusClass = 'status-attending';
             hasActiveTicketDisplay = true;
+        } else if (mod.currentTicket) {
+            cardClass   = '';
+            statusLabel = 'EN ESPERA';
+            statusClass = 'status-waiting';
+            hasActiveTicketDisplay = true;
         } else {
             cardClass   = '';
             statusLabel = 'DISPONIBLE';
