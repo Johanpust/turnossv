@@ -16,8 +16,39 @@
      PANTALLA PÚBLICA DE DISPLAY (Raspberry Pi / TV)
      Acceso sin login desde la URL /display.html.
      Muestra en tiempo real los turnos llamados por módulo.
-     Se sincroniza automáticamente con localStorage.
+     Se sincroniza automáticamente con Supabase Realtime.
      ======================================================== -->
+
+    <!-- Overlay de activación de audio (requerido por navegadores modernos) -->
+    <div id="audio-overlay" style="
+        position: fixed; inset: 0; z-index: 9999;
+        background: rgba(15, 23, 42, 0.92);
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        gap: 1.5rem; cursor: pointer;
+        backdrop-filter: blur(4px);
+    ">
+        <div style="font-size: 4rem;">🔔</div>
+        <div style="color: white; font-size: 1.6rem; font-weight: 700; text-align: center;">Sistema de Turnos</div>
+        <div style="color: rgba(255,255,255,0.7); font-size: 1.1rem; text-align: center;">
+            Toca la pantalla para activar el audio y el display en vivo
+        </div>
+        <div style="
+            margin-top: 1rem;
+            background: #3B82F6; color: white;
+            padding: 0.85rem 2.5rem; border-radius: 50px;
+            font-size: 1.1rem; font-weight: 600;
+            box-shadow: 0 4px 24px rgba(59,130,246,0.4);
+            animation: pulse-btn 1.8s ease-in-out infinite;
+        ">▶ Activar Audio</div>
+    </div>
+
+    <style>
+    @keyframes pulse-btn {
+        0%, 100% { transform: scale(1); box-shadow: 0 4px 24px rgba(59,130,246,0.4); }
+        50% { transform: scale(1.05); box-shadow: 0 8px 36px rgba(59,130,246,0.6); }
+    }
+    </style>
 
     <!-- Header con logo, título y reloj -->
     <header class="display-header">

@@ -16,9 +16,57 @@ const modulesDisplayGrid = document.getElementById('modules-display-grid');
 const callHistoryList    = document.getElementById('call-history-list');
 const displayTimeEl      = document.getElementById('display-time');
 const displayDateEl      = document.getElementById('display-date');
+const audioOverlay       = document.getElementById('audio-overlay');
 
 let lastCalledAtMap = {};
 for (let i = 1; i <= 6; i++) lastCalledAtMap[i] = 0;
+
+// Contexto de audio compartido (se crea al primer click del usuario)
+let sharedAudioCtx = null;
+let audioUnlocked  = false;
+
+// -----------------------------------------------------------------
+// activateAudio: Desbloquea el audio del navegador.
+// Debe llamarse desde un evento de usuario (click/touch).
+// -----------------------------------------------------------------
+function activateAudio() {
+    if (audioUnlocked) return;
+
+    try {
+        const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtxClass) {
+            sharedAudioCtx = new AudioCtxClass();
+            // Crear y reproducir un tono silencioso para desbloquear el contexto
+            const buf = sharedAudioCtx.createBuffer(1, 1, 22050);
+            const src = sharedAudioCtx.createBufferSource();
+            src.buffer = buf;
+            src.connect(sharedAudioCtx.destination);
+            src.start(0);
+        }
+        // Desbloquear también SpeechSynthesis con una utterance silenciosa
+        if (window.speechSynthesis) {
+            const u = new SpeechSynthesisUtterance('');
+            window.speechSynthesis.speak(u);
+        }
+        audioUnlocked = true;
+        console.log('✅ Audio desbloqueado por interacción del usuario');
+    } catch (e) {
+        console.warn('No se pudo desbloquear el audio:', e);
+    }
+
+    // Ocultar overlay
+    if (audioOverlay) {
+        audioOverlay.style.transition = 'opacity 0.4s';
+        audioOverlay.style.opacity = '0';
+        setTimeout(() => { audioOverlay.style.display = 'none'; }, 400);
+    }
+}
+
+// Wire overlay click
+if (audioOverlay) {
+    audioOverlay.addEventListener('click', activateAudio);
+    audioOverlay.addEventListener('touchend', activateAudio);
+}
 
 function startClock() {
     function tick() {
@@ -113,6 +161,7 @@ function renderModules(state) {
 
 // -----------------------------------------------------------------
 // checkForNewCalls: Detecta llamados nuevos y dispara notificación.
+// Solo ejecuta audio si el usuario ya activó la pantalla.
 // -----------------------------------------------------------------
 function checkForNewCalls(state) {
     const notificationMode = (state.settings && state.settings.notificationMode) || 'sound';
@@ -125,14 +174,41 @@ function checkForNewCalls(state) {
         if (calledAt > (lastCalledAtMap[i] || 0)) {
             lastCalledAtMap[i] = calledAt;
 
+            if (!audioUnlocked) {
+                console.log('Audio bloqueado por el navegador — el usuario debe tocar la pantalla primero.');
+                continue;
+            }
+
             if (notificationMode === 'voice') {
                 if (mod.currentTicket) {
                     announceTicket(mod.currentTicket, i);
                 }
             } else {
-                playBell();
+                playBellUnlocked();
             }
         }
+    }
+}
+
+// -----------------------------------------------------------------
+// playBellUnlocked: Reproduce campanilla usando el sharedAudioCtx
+// que ya fue desbloqueado por la interacción del usuario.
+// -----------------------------------------------------------------
+function playBellUnlocked() {
+    try {
+        if (!sharedAudioCtx) return;
+        // Reanudar si el contexto fue suspendido automáticamente
+        if (sharedAudioCtx.state === 'suspended') {
+            sharedAudioCtx.resume();
+        }
+        const ctx = sharedAudioCtx;
+        createBellTone(ctx, 880,  0,    0.6);
+        createBellTone(ctx, 1108, 0,    0.3);
+        createBellTone(ctx, 659,  0,    0.2);
+        createBellTone(ctx, 1046, 0.35, 0.5);
+        createBellTone(ctx, 1318, 0.35, 0.2);
+    } catch (e) {
+        console.error('Error al reproducir campanilla:', e);
     }
 }
 
