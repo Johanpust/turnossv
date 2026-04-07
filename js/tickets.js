@@ -145,7 +145,7 @@ function assignTicketToModule(state, moduleId) {
     mod.currentTicketType = next.type;
     mod.currentDocId = next.docId;
     mod.calledAt = null;
-    mod.isAttending = true;
+    mod.isAttending = false;
     mod.assignedAt = Date.now();
     if (!mod.callLogs) mod.callLogs = [];
 
