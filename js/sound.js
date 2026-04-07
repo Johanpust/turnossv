@@ -82,15 +82,26 @@ function announceTicket(ticket, moduleId) {
     // Cancelar cualquier anuncio previo para evitar que se amontonen
     window.speechSynthesis.cancel();
 
-    // Formatear el mensaje: "Turno A 15, Módulo 1"
     const letter = ticket.charAt(0);
-    const number = parseInt(ticket.slice(1));
-    const message = `Turno ${letter} ${number}, Módulo ${moduleId}`;
+    const number = ticket.slice(1); // Mantenemos el formato original por si tiene ceros
+
+    // Para mejorar la dicción robótica, agregamos pausas (comas, puntos) 
+    // y palabras explícitas.
+    const message = `Turno. Letra, ${letter}... número, ${number}. Pasar al módulo, ${moduleId}.`;
 
     const utterance = new SpeechSynthesisUtterance(message);
     utterance.lang = 'es-ES';
-    utterance.rate = 0.9; 
-    utterance.pitch = 1;
+    utterance.rate = 0.85; // Un poco más lento para mayor claridad
+    utterance.pitch = 1.0; 
+
+    // Intentar buscar una voz en español de buena calidad
+    const voices = window.speechSynthesis.getVoices();
+    const esVoices = voices.filter(v => v.lang.startsWith('es'));
+    if (esVoices.length > 0) {
+        // Tratar de usar una voz premium o de Google/Microsoft si existe
+        const bestVoice = esVoices.find(v => v.name.includes('Premium') || v.name.includes('Google') || v.name.includes('Microsoft')) || esVoices[0];
+        utterance.voice = bestVoice;
+    }
 
     window.speechSynthesis.speak(utterance);
 }
