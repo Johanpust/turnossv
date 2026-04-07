@@ -258,14 +258,29 @@ function renderModulesStatus(state) {
 }
 
 // -----------------------------------------------------------------
-// refreshUI: Actualiza todos los elementos de la pantalla.
+// renderFromState: Renderiza toda la UI desde un estado ya cargado.
+// Usado por onStateChange para evitar un re-fetch innecesario.
 // -----------------------------------------------------------------
-async function refreshUI() {
-    const state = await getState();
-    refreshNextTicketPreview();
+function renderFromState(state) {
+    // Actualizar preview del próximo turno con el estado recibido
+    const preview = getNextTicketPreview(state, selectedType);
+    nextTicketEl.textContent = preview;
+    if (selectedType && TYPE_STYLES[selectedType]) {
+        nextTicketEl.style.color = TYPE_STYLES[selectedType].color;
+    } else {
+        nextTicketEl.style.color = '';
+    }
     renderQueueTypeCounts(state);
     renderQueuePreview(state);
     renderModulesStatus(state);
+}
+
+// -----------------------------------------------------------------
+// refreshUI: Carga el estado desde Supabase y actualiza la pantalla.
+// -----------------------------------------------------------------
+async function refreshUI() {
+    const state = await getState();
+    renderFromState(state);
 }
 
 // -----------------------------------------------------------------
@@ -288,9 +303,10 @@ docInput.addEventListener('keydown', (e) => {
 });
 
 // -----------------------------------------------------------------
-// Sincronización en tiempo real
+// Sincronización en tiempo real — usa newState directo del WebSocket
+// sin hacer otro roundtrip a la base de datos.
 // -----------------------------------------------------------------
-onStateChange(() => { refreshUI(); });
+onStateChange((newState) => { renderFromState(newState); });
 
 // -----------------------------------------------------------------
 // Inicialización

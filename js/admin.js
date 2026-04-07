@@ -137,10 +137,10 @@ function updateStats(state) {
 }
 
 // -----------------------------------------------------------------
-// refreshUI: Re-renderiza toda la interfaz del admin.
+// renderFromState: Actualiza la UI desde un objeto estado ya cargado.
+// Usado por onStateChange (evita re-fetch) y por refreshUI.
 // -----------------------------------------------------------------
-async function refreshUI() {
-    const state = await getState();
+function renderFromState(state) {
     renderModulesGrid(state);
     updateStats(state);
 
@@ -149,6 +149,14 @@ async function refreshUI() {
             radio.checked = (radio.value === state.settings.notificationMode);
         });
     }
+}
+
+// -----------------------------------------------------------------
+// refreshUI: Carga el estado desde Supabase y re-renderiza.
+// -----------------------------------------------------------------
+async function refreshUI() {
+    const state = await getState();
+    renderFromState(state);
 }
 
 // -----------------------------------------------------------------
@@ -288,9 +296,10 @@ radioNotificationModes.forEach(radio => {
 });
 
 // -----------------------------------------------------------------
-// Sincronización en tiempo real
+// Sincronización en tiempo real — usa newState directo del WebSocket
+// sin hacer otro roundtrip a la base de datos.
 // -----------------------------------------------------------------
-onStateChange(() => { refreshUI(); });
+onStateChange((newState) => { renderFromState(newState); });
 
 // -----------------------------------------------------------------
 // Inicialización
