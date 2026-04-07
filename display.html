@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pantalla de Turnos — Sistema de Turnos</title>
+    <meta name="description" content="Pantalla pública de turnos llamados. Sin login requerido." />
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="stylesheet" href="css/display.css" />
+</head>
+
+<body class="display-page">
+
+    <!-- ========================================================
+     PANTALLA PÚBLICA DE DISPLAY (Raspberry Pi / TV)
+     Acceso sin login desde la URL /display.html.
+     Muestra en tiempo real los turnos llamados por módulo.
+     Se sincroniza automáticamente con localStorage.
+     ======================================================== -->
+
+    <!-- Header con logo, título y reloj -->
+    <header class="display-header">
+        <div class="display-header-left">
+            <div class="display-logo">🏥</div>
+            <div>
+                <div class="display-title">Sistema de Turnos</div>
+                <div class="display-subtitle">Sala de Espera — Atención al Paciente</div>
+            </div>
+        </div>
+
+        <!-- Reloj en tiempo real -->
+        <div class="display-clock">
+            <div class="display-time" id="display-time">00:00:00</div>
+            <div class="display-date" id="display-date">—</div>
+        </div>
+    </header>
+
+    <!-- Cuerpo principal -->
+    <div class="display-body">
+
+        <!-- === Grid de módulos === -->
+        <div class="display-section-title">MÓDULOS DE ATENCIÓN</div>
+
+        <div class="modules-display-grid" id="modules-display-grid">
+            <!-- Las 4 tarjetas de módulos se generan dinámicamente en display.js -->
+        </div>
+
+        <!-- === Historial de llamados recientes === -->
+        <div class="call-history-section">
+            <div class="display-section-title" style="margin-bottom: 0.75rem;">COLA DE ESPERA</div>
+            <div class="call-history-list" id="call-history-list">
+                <span class="no-history">No hay llamados recientes...</span>
+            </div>
+        </div>
+
+    </div><!-- /display-body -->
+
+    <!-- Footer con indicador de sincronización -->
+    <footer class="display-footer">
+        <span class="display-footer-text">
+            &copy; 2026 Baneste Codes. Todos los derechos reservados. &bull; Sistema de Turnos Hospitalarios &bull; Powered by Baneste Codes
+        </span>
+        <div class="live-indicator">
+            <span class="dot dot-active"></span>
+            EN VIVO
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/storage.js"></script>
+    <script src="js/sound.js"></script>
+    <script src="js/display.js"></script>
+
+</body>
+
+</html>

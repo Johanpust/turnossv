@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Administrador — Sistema de Turnos</title>
+    <meta name="description" content="Panel de control del administrador del sistema de turnos." />
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="stylesheet" href="css/admin.css" />
+</head>
+
+<body class="admin-page">
+
+    <!-- Barra de navegación superior -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <div class="navbar-brand-logo">🏥</div>
+            <span class="navbar-brand-text">Sistema de Turnos</span>
+        </div>
+        <div class="navbar-right">
+            <div class="navbar-user">
+                <span>👤</span>
+                <span id="nav-username">Administrador</span>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="logout()">
+                🚪 Salir
+            </button>
+        </div>
+    </nav>
+
+    <!-- Header azul con degradado -->
+    <div class="admin-header">
+        <div class="admin-header-content">
+            <div>
+                <h1>Panel de Administración</h1>
+                <p>Gestión de módulos, tipos de turno y configuración del sistema</p>
+            </div>
+            <div style="display:flex; gap: 1rem; flex-wrap: wrap;">
+                <a href="display.html" target="_blank" class="btn btn-outline"
+                    style="color:white; border-color:rgba(255,255,255,0.4);">
+                    📺 Ver Display
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cuerpo principal del admin -->
+    <div class="admin-body">
+
+        <!-- === Estadísticas rápidas === -->
+        <div class="stats-grid" id="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-blue">🎟️</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="stat-total-queue">0</div>
+                    <div class="stat-label">En Cola</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-red">🚨</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="stat-high-queue">0</div>
+                    <div class="stat-label">Alta Prioridad</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-green">✅</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="stat-active-modules">0</div>
+                    <div class="stat-label">Módulos Activos</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon stat-icon-yellow">🎫</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="stat-queue-types">E·A·V·B</div>
+                    <div class="stat-label">Tipos en Cola</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- === Sección: Módulos === -->
+        <div class="section-header">
+            <h2>Estado de Módulos</h2>
+            <div style="display:flex;gap:0.75rem; flex-wrap:wrap;">
+                <button class="btn btn-success btn-sm" id="btn-activate-all">✅ Activar Todos</button>
+                <button class="btn btn-danger btn-sm" id="btn-deactivate-all">❌ Desactivar Todos</button>
+            </div>
+        </div>
+
+        <div class="modules-grid" id="modules-grid">
+            <!-- Las tarjetas de módulos se generan dinámicamente en admin.js -->
+        </div>
+
+        <!-- === Sección: Acciones del Sistema === -->
+        <div class="admin-actions">
+            <h2>🛠️ Acciones del Sistema</h2>
+
+            <!-- Reiniciar turnos -->
+            <div class="action-row">
+                <div class="action-info">
+                    <h3>🔄 Reiniciar Sistema de Turnos</h3>
+                    <p>Borra toda la cola y reinicia los contadores (E001, A001, V001, B001). Los módulos conservan su configuración.</p>
+                </div>
+                <button class="btn btn-danger" id="btn-reset">Reiniciar Turnos</button>
+            </div>
+
+            <!-- Configuración de Voz -->
+            <div class="action-row" style="margin-top: 1.5rem; border-top: 1px solid var(--gray-100); padding-top: 1.5rem;">
+                <div class="action-info">
+                    <h3>🎙️ Modo de Notificación</h3>
+                    <p>Seleccione cómo desea anunciar los turnos en la pantalla de espera.</p>
+                </div>
+                <div class="notification-modes" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer;">
+                        <input type="radio" name="notification-mode" value="sound" style="width: 20px; height: 20px;">
+                        <span style="font-weight: 600;">🔔 Solo Sonido de Alerta</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer;">
+                        <input type="radio" name="notification-mode" value="voice" style="width: 20px; height: 20px;">
+                        <span style="font-weight: 600;">🎙️ Llamado por Voz </span>
+                    </label>
+                </div>
+            </div>
+
+        </div>
+
+    </div><!-- /admin-body -->
+
+    <!-- === Modal de confirmación de reinicio === -->
+    <div class="modal-overlay" id="modal-reset">
+        <div class="modal-box">
+            <div class="modal-icon">⚠️</div>
+            <div class="modal-title">¿Reiniciar todos los turnos?</div>
+            <div class="modal-message">
+                Esta acción eliminará <strong>toda la cola de turnos</strong> y reiniciará los contadores a
+                <strong>E001, A001, V001 y B001</strong>.
+                Los turnos en curso en los módulos también se limpiarán.<br /><br />
+                Esta acción <strong>no se puede deshacer</strong>.
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="btn-cancel-reset">Cancelar</button>
+                <button class="btn btn-danger" id="btn-confirm-reset">Sí, reiniciar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/auth.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/tickets.js"></script>
+    <script src="js/admin.js"></script>
+
+</body>
+
+</html>

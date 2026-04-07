@@ -1,0 +1,396 @@
+/* =============================================================
+   recepcion.css — Estilos de la vista del recepcionista
+   ============================================================= */
+
+.recepcion-page {
+    background: var(--gray-50);
+}
+
+/* Layout de dos columnas: formulario + historial */
+.recepcion-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: var(--space-6);
+    align-items: start;
+}
+
+/* === Panel izquierdo: Generar turno === */
+.ticket-generator {
+    background: white;
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+
+.ticket-generator-header {
+    background: linear-gradient(135deg, var(--primary-700), var(--primary-500));
+    padding: var(--space-6) var(--space-8);
+    color: white;
+}
+
+.ticket-generator-header h2 {
+    font-size: var(--font-size-2xl);
+    font-weight: 800;
+    margin-bottom: var(--space-1);
+}
+
+.ticket-generator-header p {
+    opacity: 0.85;
+    font-size: var(--font-size-sm);
+}
+
+.ticket-generator-body {
+    padding: var(--space-8);
+}
+
+/* === Selector de tipo de turno === */
+.ticket-type-section {
+    margin-bottom: var(--space-5);
+}
+
+.ticket-type-label {
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    color: var(--gray-700);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--space-3);
+}
+
+.required-star {
+    color: #ef4444;
+    margin-left: 2px;
+}
+
+.ticket-type-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+}
+
+.ticket-type-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-4) var(--space-3);
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-xl);
+    background: white;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    font-family: var(--font-family);
+}
+
+.ticket-type-btn:hover {
+    border-color: var(--primary-400);
+    background: var(--primary-50);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.ticket-type-btn.selected {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+}
+
+.type-emoji {
+    font-size: 1.6rem;
+    line-height: 1;
+}
+
+.type-letter {
+    font-size: 1.5rem;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.type-desc {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.2;
+    opacity: 0.8;
+}
+
+/* Preview del próximo ticket */
+.next-ticket-preview {
+    background: var(--primary-50);
+    border: 2px dashed var(--primary-300);
+    border-radius: var(--radius-xl);
+    padding: var(--space-5);
+    text-align: center;
+    margin-bottom: var(--space-6);
+}
+
+.next-ticket-label {
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--primary-600);
+    margin-bottom: var(--space-2);
+}
+
+.next-ticket-code {
+    font-size: 3.5rem;
+    font-weight: 900;
+    color: var(--primary-700);
+    letter-spacing: 0.08em;
+    line-height: 1;
+}
+
+/* Formulario */
+.ticket-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+.ticket-form .input-field {
+    font-size: var(--font-size-lg);
+    padding: var(--space-4) var(--space-5);
+}
+
+/* Botones de generar turno */
+.ticket-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+    margin-top: var(--space-2);
+}
+
+.btn-normal-ticket {
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+    color: white;
+    border: none;
+    border-radius: var(--radius-xl);
+    padding: var(--space-5) var(--space-4);
+    font-family: var(--font-family);
+    font-weight: 700;
+    font-size: var(--font-size-base);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.btn-normal-ticket .btn-icon {
+    font-size: 1.75rem;
+}
+
+.btn-normal-ticket:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.45);
+}
+
+.btn-priority-ticket {
+    background: linear-gradient(135deg, #dc2626, var(--danger));
+    color: white;
+    border: none;
+    border-radius: var(--radius-xl);
+    padding: var(--space-5) var(--space-4);
+    font-family: var(--font-family);
+    font-weight: 700;
+    font-size: var(--font-size-base);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.35);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.btn-priority-ticket .btn-icon {
+    font-size: 1.75rem;
+}
+
+.btn-priority-ticket:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.45);
+}
+
+.btn-normal-ticket:disabled,
+.btn-priority-ticket:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Confirmación tras generar turno */
+.ticket-confirmation {
+    display: none;
+    background: var(--success-bg);
+    border: 1px solid #86efac;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4) var(--space-5);
+    margin-top: var(--space-4);
+    animation: fadeInUp 0.35s ease;
+}
+
+.ticket-confirmation.visible {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.confirmation-icon {
+    font-size: 1.5rem;
+}
+
+.confirmation-text {
+    font-size: var(--font-size-sm);
+    color: #065f46;
+}
+
+.confirmation-text strong {
+    font-size: var(--font-size-lg);
+    display: block;
+}
+
+/* === Panel derecho: Estadísticas y cola === */
+.queue-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.queue-stats-card {
+    background: white;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+    padding: var(--space-5);
+    border: 1px solid var(--gray-100);
+}
+
+.queue-stats-card h3 {
+    font-size: var(--font-size-base);
+    font-weight: 700;
+    color: var(--gray-700);
+    margin-bottom: var(--space-4);
+}
+
+.queue-numbers {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+}
+
+.queue-num-item {
+    text-align: center;
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+}
+
+.queue-num-item.high-priority {
+    background: var(--danger-bg);
+}
+
+.queue-num-item.normal {
+    background: var(--primary-50);
+}
+
+.queue-num-value {
+    font-size: var(--font-size-3xl);
+    font-weight: 800;
+    line-height: 1;
+}
+
+.queue-num-item.high-priority .queue-num-value {
+    color: var(--danger);
+}
+
+.queue-num-item.normal .queue-num-value {
+    color: var(--primary-600);
+}
+
+.queue-num-label {
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: var(--space-1);
+    color: var(--gray-500);
+}
+
+/* Lista de los próximos en cola */
+.queue-list-card {
+    background: white;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+    padding: var(--space-5);
+    border: 1px solid var(--gray-100);
+}
+
+.queue-list-card h3 {
+    font-size: var(--font-size-base);
+    font-weight: 700;
+    color: var(--gray-700);
+    margin-bottom: var(--space-3);
+}
+
+.queue-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.queue-item:last-child {
+    border-bottom: none;
+}
+
+.queue-item-ticket {
+    font-weight: 800;
+    font-size: var(--font-size-lg);
+    color: var(--primary-700);
+    min-width: 52px;
+}
+
+.queue-item.high-priority .queue-item-ticket {
+    color: var(--danger);
+}
+
+.queue-item-doc {
+    flex: 1;
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+}
+
+.queue-empty {
+    text-align: center;
+    color: var(--gray-400);
+    font-size: var(--font-size-sm);
+    padding: var(--space-6) 0;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .recepcion-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .queue-panel {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .ticket-generator-body {
+        padding: var(--space-5);
+    }
+
+    .ticket-buttons {
+        grid-template-columns: 1fr;
+    }
+
+    .queue-panel {
+        display: flex;
+    }
+}

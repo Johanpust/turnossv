@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Módulo — Sistema de Turnos</title>
+    <meta name="description" content="Vista del operador de módulo: turno actual, llamar, siguiente y pausar." />
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="stylesheet" href="css/modulo.css" />
+</head>
+
+<body class="modulo-page">
+
+    <!-- ========================================================
+     VISTA DEL OPERADOR DE MÓDULO (1–4)
+     El módulo se determina por el parámetro ?mod=N en la URL.
+     Muestra el turno actual, permite llamar, avanzar y pausar.
+     ======================================================== -->
+
+    <!-- Barra de navegación -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <div class="navbar-brand-logo">🏥</div>
+            <span class="navbar-brand-text">Sistema de Turnos</span>
+        </div>
+        <div class="navbar-right">
+            <!-- Estado del módulo (badge dinámico) -->
+            <span class="badge" id="nav-status-badge">Activo</span>
+            <button class="btn btn-secondary btn-sm" onclick="logout()">🚪 Salir</button>
+        </div>
+    </nav>
+
+    <!-- Contenido principal centrado -->
+    <main>
+        <div class="modulo-layout">
+
+            <!-- === Tarjeta principal del turno === -->
+            <div class="turno-card animate-in" id="turno-card">
+
+                <!-- Cabecera: número de módulo + estado -->
+                <div class="turno-card-header">
+                    <div class="modulo-title">
+                        <div class="modulo-num" id="modulo-num-icon">1</div>
+                        <span>Módulo <span id="modulo-num-text">1</span></span>
+                    </div>
+                    <span class="badge badge-active" id="module-status-badge">
+                        <span class="dot dot-active"></span> Activo
+                    </span>
+                </div>
+
+                <!-- Banner de estado (visible solo cuando pausado o inactivo) -->
+                <div class="state-banner" id="state-banner"></div>
+
+                <!-- Cuerpo: turno actual -->
+                <div class="turno-card-body" id="turno-card-body">
+
+                    <!-- Vista cuando hay turno activo -->
+                    <div id="turno-content" style="display:none;">
+                        <div class="turno-doc-label">Documento de Identidad</div>
+                        <div class="turno-doc-value" id="turno-doc">—</div>
+
+                        <div class="turno-numero" id="turno-numero">A01</div>
+
+                        <!-- Badge de prioridad (visible si es alta prioridad) -->
+                        <div id="priority-badge" style="display:none; justify-content:center; margin-bottom:1rem;">
+                            <span class="badge badge-high">🔴 Alta Prioridad</span>
+                        </div>
+                    </div>
+
+                    <!-- Vista cuando no hay turno activo -->
+                    <div class="turno-empty" id="turno-empty">
+                        <div class="turno-empty-icon">🎟️</div>
+                        <div class="turno-empty-text">Sin turno asignado</div>
+                        <div class="turno-empty-sub" id="empty-sub-text">Esperando próximo en cola...</div>
+                    </div>
+
+                </div><!-- /turno-card-body -->
+            </div><!-- /turno-card -->
+
+            <!-- === Botones de acción === -->
+            <div class="turno-actions" id="turno-actions">
+
+                <!-- Botón Llamar -->
+                <button class="btn-llamar" id="btn-llamar" disabled>
+                    <span class="btn-icon">🔔</span>
+                    <span>Llamar</span>
+                </button>
+
+                <!-- Botón Atendiendo -->
+                <button class="btn-atendiendo" id="btn-atendiendo" disabled>
+                    <span class="btn-icon">👨‍⚕️</span>
+                    <span>Atendiendo</span>
+                </button>
+
+                <!-- Botón Siguiente -->
+                <button class="btn-siguiente" id="btn-siguiente" disabled>
+                    <span class="btn-icon">⏭️</span>
+                    <span>Siguiente</span>
+                </button>
+
+            </div>
+
+            <!-- Botón de Pausar / Reanudar -->
+            <button class="btn-pausa pausar" id="btn-pausa" disabled>
+                <span id="pausa-icon">⏸️</span>
+                <span id="pausa-text">Pausar servicio</span>
+            </button>
+
+            <!-- Panel de información de la cola -->
+            <div class="queue-info" id="queue-info" style="margin-top: 1rem;">
+                <div class="queue-info-item">
+                    <div class="queue-info-value" id="qi-high">0</div>
+                    <div class="queue-info-label">🔴 Alta Prioridad</div>
+                </div>
+                <div class="queue-info-item">
+                    <div class="queue-info-value" id="qi-normal">0</div>
+                    <div class="queue-info-label">🔵 Normal</div>
+                </div>
+                <div class="queue-info-item">
+                    <div class="queue-info-value" id="qi-total">0</div>
+                    <div class="queue-info-label">📋 Total en espera</div>
+                </div>
+            </div>
+
+            <!-- Timer de servicio y log de llamados -->
+            <div class="service-details animate-in" id="service-details" style="display:none; margin-top: 1.5rem;">
+                <div class="detail-card">
+                    <div class="detail-header">
+                        <span class="detail-title">⏱️ Tiempo de Atención</span>
+                        <div class="timer-badge" id="service-timer">00:00</div>
+                    </div>
+                </div>
+
+                <div class="detail-card" style="margin-top: 1rem;">
+                    <div class="detail-header" style="flex-direction: column; align-items: flex-start; gap: 0.75rem;">
+                        <span class="detail-title">📞 Historial de Llamados</span>
+                        <div class="search-box" style="width: 100%;">
+                            <input type="text" id="search-calls" class="input-field" placeholder="Buscar turno (ej: A01)..." style="font-size: 0.8rem; padding: 0.5rem; width: 100%;">
+                        </div>
+                    </div>
+                    <div class="calls-log" id="calls-log">
+                        <div class="log-empty">No se han realizado llamados aún</div>
+                    </div>
+                </div>
+
+                <!-- Turnos Atendidos (Acordeón) -->
+                <div class="detail-card" style="margin-top: 1rem;">
+                    <button class="accordion-header" id="btn-toggle-attended" style="width: 100%; border: none; background: none; padding: 0; outline: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                        <span class="detail-title" style="margin: 0;">✅ Turnos Atendidos</span>
+                        <span class="accordion-icon" id="accordion-icon">▼</span>
+                    </button>
+                    <div class="accordion-content" id="attended-content" style="display: none; margin-top: 1rem;">
+                        <div class="finished-tickets-log" id="finished-tickets-log">
+                            <div class="log-empty">No hay turnos finalizados aún</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /modulo-layout -->
+    </main>
+
+    <!-- Scripts -->
+    <script src="js/auth.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/tickets.js"></script>
+    <script src="js/sound.js"></script>
+    <script src="js/modulo.js"></script>
+
+</body>
+
+</html>

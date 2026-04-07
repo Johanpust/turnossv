@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema de Turnos — Iniciar Sesión</title>
+  <meta name="description" content="Sistema de gestión de turnos hospitalarios. Inicia sesión para acceder." />
+  <!-- Estilos globales y de login -->
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/login.css" />
+</head>
+<body>
+
+<!-- ========================================================
+     PÁGINA DE LOGIN UNIVERSAL
+     Todos los usuarios ingresan aquí y son redirigidos
+     automáticamente según su rol tras autenticarse.
+     ======================================================== -->
+<div class="login-page">
+
+  <!-- Tarjeta de login centrada -->
+  <div class="login-card">
+
+    <!-- Logo del sistema -->
+    <div class="login-logo">
+      <div class="login-logo-circle">
+        <span>🏥</span>
+      </div>
+    </div>
+
+    <h1 class="login-title">Sistema de Turnos</h1>
+    <p class="login-subtitle">Ingresa tus credenciales para continuar</p>
+
+    <!-- Formulario de autenticación -->
+    <form class="login-form" id="login-form" autocomplete="off" novalidate>
+
+      <!-- Campo: usuario -->
+      <div class="input-group">
+        <label class="input-label" for="username">Usuario</label>
+        <div class="input-icon-wrapper">
+          <span class="input-icon">👤</span>
+          <input
+            type="text"
+            id="username"
+            class="input-field"
+            placeholder="Ingresa tu usuario"
+            autocomplete="username"
+            required
+          />
+        </div>
+      </div>
+
+      <!-- Campo: contraseña -->
+      <div class="input-group">
+        <label class="input-label" for="password">Contraseña</label>
+        <div class="input-icon-wrapper">
+          <span class="input-icon">🔒</span>
+          <input
+            type="password"
+            id="password"
+            class="input-field"
+            placeholder="Ingresa tu contraseña"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+      </div>
+
+      <!-- Mensaje de error (oculto por defecto) -->
+      <div id="login-error" class="login-error" role="alert"></div>
+
+      <!-- Botón de ingreso -->
+      <button type="submit" class="login-btn" id="login-btn">
+        Iniciar Sesión
+      </button>
+
+    </form>
+
+    <!-- Acceso directo a la pantalla pública sin login -->
+    <a href="display.html" class="display-link">
+      📺 Acceder a pantalla de visualización pública
+    </a>
+
+    <p class="login-footer">
+      Sistema de Turnos Hospitalarios &copy; 2025
+    </p>
+
+  </div><!-- /login-card -->
+</div><!-- /login-page -->
+
+<!-- Scripts: autenticación y lógica de login -->
+<script src="js/auth.js"></script>
+<script src="js/login.js"></script>
+
+</body>
+</html>

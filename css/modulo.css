@@ -1,0 +1,461 @@
+/* =============================================================
+   modulo.css — Estilos de la vista del operador de módulo
+   ============================================================= */
+
+.modulo-page {
+    background: var(--gray-50);
+}
+
+/* Layout centrado vertical y horizontal para foco en el turno */
+.modulo-layout {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: var(--space-6) var(--space-4);
+}
+
+/* === Tarjeta principal del turno === */
+.turno-card {
+    background: white;
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-xl);
+    overflow: hidden;
+    margin-bottom: var(--space-4);
+    transition: all var(--transition-normal);
+    border: 2px solid transparent;
+}
+
+/* Estado: Activo con turno */
+.turno-card.has-ticket {
+    border-color: var(--primary-300);
+}
+
+/* Estado: Pausado */
+.turno-card.is-paused {
+    border-color: var(--paused);
+}
+
+/* Estado: Inactivo (desactivado por admin) */
+.turno-card.is-inactive {
+    border-color: var(--danger);
+}
+
+/* Cabecera de la tarjeta */
+.turno-card-header {
+    padding: var(--space-5) var(--space-6);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.modulo-title {
+    font-size: var(--font-size-2xl);
+    font-weight: 800;
+    color: var(--primary-700);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.modulo-title .modulo-num {
+    background: var(--primary-100);
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-xl);
+}
+
+/* Cuerpo de la tarjeta: turno actual */
+.turno-card-body {
+    padding: var(--space-8) var(--space-6);
+    text-align: center;
+}
+
+/* Número de turno grande */
+.turno-numero {
+    font-size: 7rem;
+    font-weight: 900;
+    color: var(--primary-700);
+    letter-spacing: 0.05em;
+    line-height: 1;
+    margin-bottom: var(--space-4);
+    transition: all var(--transition-slow);
+}
+
+/* Animación cuando llega un nuevo turno */
+@keyframes ticketPop {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    60% {
+        transform: scale(1.08);
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.turno-numero.animate-pop {
+    animation: ticketPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Documento de identidad */
+.turno-doc-label {
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--gray-400);
+    margin-bottom: var(--space-1);
+}
+
+.turno-doc-value {
+    font-size: var(--font-size-2xl);
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: var(--space-6);
+}
+
+/* Placeholder cuando no hay turno */
+.turno-empty {
+    padding: var(--space-8) 0;
+}
+
+.turno-empty-icon {
+    font-size: 4rem;
+    opacity: 0.25;
+    margin-bottom: var(--space-3);
+}
+
+.turno-empty-text {
+    font-size: var(--font-size-lg);
+    color: var(--gray-400);
+    font-weight: 500;
+}
+
+.turno-empty-sub {
+    font-size: var(--font-size-sm);
+    color: var(--gray-300);
+    margin-top: var(--space-2);
+}
+
+/* Banner de estado (pausado / inactivo) */
+.state-banner {
+    display: none;
+    padding: var(--space-4) var(--space-6);
+    text-align: center;
+    font-weight: 700;
+    font-size: var(--font-size-base);
+    border-top: 1px solid transparent;
+}
+
+.state-banner.paused {
+    display: block;
+    background: var(--paused-bg);
+    color: var(--paused);
+    border-color: #c4b5fd;
+}
+
+.state-banner.inactive {
+    display: block;
+    background: var(--danger-bg);
+    color: var(--danger);
+    border-color: #fecaca;
+}
+
+/* === Botones de acción === */
+.turno-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.btn-llamar {
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-800));
+    color: white;
+    border: none;
+    border-radius: var(--radius-xl);
+    padding: var(--space-5) var(--space-2);
+    font-family: var(--font-family);
+    font-weight: 700;
+    font-size: var(--font-size-base);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.btn-atendiendo {
+    background: linear-gradient(135deg, #facc15, #ca8a04);
+    color: #422006;
+    border: none;
+    border-radius: var(--radius-xl);
+    padding: var(--space-5) var(--space-2);
+    font-family: var(--font-family);
+    font-weight: 700;
+    font-size: var(--font-size-base);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    box-shadow: 0 4px 20px rgba(234, 179, 8, 0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.btn-llamar .btn-icon,
+.btn-atendiendo .btn-icon,
+.btn-siguiente .btn-icon {
+    font-size: 1.8rem;
+}
+
+.btn-llamar:hover:not(:disabled),
+.btn-atendiendo:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(37, 99, 235, 0.5);
+}
+
+.btn-atendiendo:hover:not(:disabled) {
+    box-shadow: 0 8px 30px rgba(234, 179, 8, 0.5);
+}
+
+/* Efecto pulso cuando se puede llamar */
+@keyframes btnPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 4px 30px rgba(37, 99, 235, 0.7);
+    }
+}
+
+.btn-llamar.has-ticket {
+    animation: btnPulse 2.5s ease-in-out infinite;
+}
+
+.btn-siguiente {
+    background: linear-gradient(135deg, var(--success), #059669);
+    color: white;
+    border: none;
+    border-radius: var(--radius-xl);
+    padding: var(--space-5) var(--space-2);
+    font-family: var(--font-family);
+    font-weight: 700;
+    font-size: var(--font-size-base);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.btn-siguiente .btn-icon {
+    font-size: 2rem;
+}
+
+.btn-siguiente:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(16, 185, 129, 0.5);
+}
+
+.btn-llamar:disabled,
+.btn-siguiente:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none !important;
+    animation: none !important;
+    box-shadow: none !important;
+}
+
+/* Botón de pausar/reanudar */
+.btn-pausa {
+    width: 100%;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    font-size: var(--font-size-base);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-family);
+    transition: all var(--transition-normal);
+}
+
+.btn-pausa.pausar {
+    background: var(--paused-bg);
+    color: var(--paused);
+    border: 2px solid #c4b5fd;
+}
+
+.btn-pausa.reanudar {
+    background: var(--success-bg);
+    color: var(--success);
+    border: 2px solid #86efac;
+}
+
+.btn-pausa:hover:not(:disabled) {
+    opacity: 0.85;
+    transform: translateY(-1px);
+}
+
+.btn-pausa:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Panel de información de la cola */
+.queue-info {
+    background: white;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+    padding: var(--space-5);
+    border: 1px solid var(--gray-100);
+    display: flex;
+    justify-content: space-around;
+    text-align: center;
+}
+
+.queue-info-item {
+    flex: 1;
+}
+
+.queue-info-value {
+    font-size: var(--font-size-3xl);
+    font-weight: 800;
+    color: var(--primary-600);
+    line-height: 1;
+}
+
+.queue-info-label {
+    font-size: var(--font-size-xs);
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: var(--space-1);
+}
+
+/* === Detalles de servicio (Timer y Log) === */
+.service-details {
+    width: 100%;
+}
+
+.detail-card {
+    background: white;
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--gray-200);
+    padding: var(--space-4) var(--space-5);
+    box-shadow: var(--shadow-sm);
+}
+
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.detail-title {
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.timer-badge {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: var(--font-size-2xl);
+    font-weight: 800;
+    color: var(--primary-700);
+    background: var(--primary-50);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--primary-100);
+}
+
+.calls-log {
+    margin-top: var(--space-3);
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.log-item {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--gray-50);
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+}
+
+.log-item:last-child {
+    border-bottom: none;
+}
+
+.log-empty {
+    font-size: var(--font-size-sm);
+    color: var(--gray-400);
+    text-align: center;
+    padding: var(--space-2) 0;
+}
+
+/* Acordeón y Búsqueda */
+.accordion-header {
+    transition: all var(--transition-fast);
+}
+
+.accordion-header:hover {
+    opacity: 0.7;
+}
+
+.accordion-icon {
+    font-size: 0.8rem;
+    color: var(--gray-400);
+    transition: transform var(--transition-normal);
+}
+
+.accordion-header.active .accordion-icon {
+    transform: rotate(180deg);
+}
+
+.finished-tickets-log {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.search-box .input-field {
+    border: 1px solid var(--gray-200);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .turno-numero {
+        font-size: 5rem;
+    }
+
+    .turno-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .modulo-layout {
+        padding: var(--space-4) var(--space-3);
+    }
+}
