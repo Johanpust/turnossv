@@ -1,10 +1,8 @@
 // =============================================================
 // recepcion.js — Lógica de la vista del recepcionista
-// El recepcionista selecciona el tipo (E/A/V/B) e ingresa la
-// cédula del paciente para generar un turno normal o prioritario.
+// ACTUALIZADO: usa async/await con Supabase.
 // =============================================================
 
-// Verificar que el usuario autenticado tiene rol 'recepcion'
 const session = requireRole('recepcion');
 
 // -----------------------------------------------------------------
@@ -22,13 +20,9 @@ const confirmationBox   = document.getElementById('ticket-confirmation');
 const confirmTicketEl   = document.getElementById('confirmation-ticket');
 const confirmDetailEl   = document.getElementById('confirmation-detail');
 
-// Tipo seleccionado actualmente (null = ninguno)
 let selectedType = null;
-
-// Temporizador para ocultar la confirmación
 let confirmationTimer = null;
 
-// Colores y emojis por tipo (deben coincidir con TICKET_TYPES en storage.js)
 const TYPE_STYLES = {
     E: { color: '#3B82F6', bg: '#EFF6FF', emoji: '📦', label: 'Entrega de órdenes' },
     A: { color: '#10B981', bg: '#ECFDF5', emoji: '📅', label: 'Activación de citas' },
@@ -42,14 +36,7 @@ const TYPE_STYLES = {
 document.querySelectorAll('.ticket-type-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         const type = btn.dataset.type;
-
-        if (selectedType === type) {
-            // Deseleccionar si se hace clic en el tipo ya activo
-            selectedType = null;
-        } else {
-            selectedType = type;
-        }
-
+        selectedType = (selectedType === type) ? null : type;
         updateTypeButtons();
         updateButtonState();
         refreshNextTicketPreview();
@@ -57,9 +44,6 @@ document.querySelectorAll('.ticket-type-btn').forEach(btn => {
     });
 });
 
-// -----------------------------------------------------------------
-// updateTypeButtons: Refleja visualmente el tipo seleccionado.
-// -----------------------------------------------------------------
 function updateTypeButtons() {
     document.querySelectorAll('.ticket-type-btn').forEach(btn => {
         const type = btn.dataset.type;
@@ -78,9 +62,6 @@ function updateTypeButtons() {
     });
 }
 
-// -----------------------------------------------------------------
-// validateForm: Valida que haya tipo seleccionado y cédula válida.
-// -----------------------------------------------------------------
 function validateForm() {
     if (!selectedType) {
         showFormError('⚠️ Debes seleccionar el tipo de turno antes de continuar.');
@@ -99,9 +80,6 @@ function validateForm() {
     return true;
 }
 
-// -----------------------------------------------------------------
-// showFormError / clearFormError
-// -----------------------------------------------------------------
 function showFormError(msg) {
     formError.textContent = msg;
     formError.style.display = 'block';
@@ -110,9 +88,6 @@ function clearFormError() {
     formError.style.display = 'none';
 }
 
-// -----------------------------------------------------------------
-// updateButtonState: Habilita los botones solo si hay tipo + cédula.
-// -----------------------------------------------------------------
 function updateButtonState() {
     const hasDoc  = docInput.value.trim().length >= 4;
     const hasType = selectedType !== null;
@@ -121,14 +96,13 @@ function updateButtonState() {
 }
 
 // -----------------------------------------------------------------
-// refreshNextTicketPreview: Actualiza el preview según el tipo seleccionado.
+// refreshNextTicketPreview: usa el estado más reciente de Supabase.
 // -----------------------------------------------------------------
-function refreshNextTicketPreview() {
-    const state = getState();
+async function refreshNextTicketPreview() {
+    const state = await getState();
     const preview = getNextTicketPreview(state, selectedType);
     nextTicketEl.textContent = preview;
 
-    // Color dinámico si hay tipo seleccionado
     if (selectedType && TYPE_STYLES[selectedType]) {
         nextTicketEl.style.color = TYPE_STYLES[selectedType].color;
     } else {
@@ -136,9 +110,6 @@ function refreshNextTicketPreview() {
     }
 }
 
-// -----------------------------------------------------------------
-// showConfirmation: Muestra el mensaje de confirmación del turno.
-// -----------------------------------------------------------------
 function showConfirmation(ticket, type, priority) {
     const typeStyle  = TYPE_STYLES[type] || {};
     const prioLabel  = priority === 'high' ? '🔴 Alta Prioridad' : '🔵 Normal';
@@ -146,7 +117,6 @@ function showConfirmation(ticket, type, priority) {
 
     confirmTicketEl.textContent = `Turno ${ticket}`;
     confirmDetailEl.textContent = `${typeLabel} — ${prioLabel}`;
-
     confirmationBox.classList.add('visible');
 
     clearTimeout(confirmationTimer);
@@ -156,28 +126,32 @@ function showConfirmation(ticket, type, priority) {
 }
 
 // -----------------------------------------------------------------
-// generateTicket: Genera un nuevo turno con tipo y prioridad.
+// generateTicket: Genera un nuevo turno y lo guarda en Supabase.
 // -----------------------------------------------------------------
-function generateTicket(priority) {
+async function generateTicket(priority) {
     if (!validateForm()) return;
+
+    // Deshabilitar botones mientras se procesa
+    btnNormal.disabled   = true;
+    btnPriority.disabled = true;
 
     const docId = docInput.value.trim();
     const type  = selectedType;
-    const state = getState();
+    const state = await getState();
 
     const ticket = addTicket(state, docId, priority, type);
     autoAssignToFreeModules(state);
-    setState(state);
+    await setState(state);
 
     showConfirmation(ticket.ticket, type, priority);
     docInput.value = '';
     docInput.focus();
     updateButtonState();
-    refreshUI();
+    await refreshUI();
 }
 
 // -----------------------------------------------------------------
-// renderQueueTypeCounts: Muestra el conteo de turnos por tipo.
+// renderQueueTypeCounts
 // -----------------------------------------------------------------
 function renderQueueTypeCounts(state) {
     const counts = getQueueCountByType(state);
@@ -204,7 +178,7 @@ function renderQueueTypeCounts(state) {
 }
 
 // -----------------------------------------------------------------
-// renderQueuePreview: Muestra los próximos 5 turnos en cola.
+// renderQueuePreview
 // -----------------------------------------------------------------
 function renderQueuePreview(state) {
     const combined = [
@@ -234,7 +208,7 @@ function renderQueuePreview(state) {
 }
 
 // -----------------------------------------------------------------
-// renderModulesStatus: Muestra el estado de cada módulo.
+// renderModulesStatus
 // -----------------------------------------------------------------
 function renderModulesStatus(state) {
     modulesStatusList.innerHTML = '';
@@ -268,7 +242,6 @@ function renderModulesStatus(state) {
             statusClass = 'badge-normal';
         }
 
-        // Tipos permitidos del módulo
         const allowedStr = (mod.allowedTypes || ['E','A','V','B']).join(', ');
 
         const item = document.createElement('div');
@@ -287,8 +260,8 @@ function renderModulesStatus(state) {
 // -----------------------------------------------------------------
 // refreshUI: Actualiza todos los elementos de la pantalla.
 // -----------------------------------------------------------------
-function refreshUI() {
-    const state = getState();
+async function refreshUI() {
+    const state = await getState();
     refreshNextTicketPreview();
     renderQueueTypeCounts(state);
     renderQueuePreview(state);

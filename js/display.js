@@ -1,13 +1,10 @@
 // =============================================================
 // display.js — Lógica de la pantalla pública (Raspberry Pi / TV)
-// No requiere autenticación. Lee el estado de localStorage
-// y se sincroniza automáticamente en tiempo real.
-// Soporta 6 módulos y 4 tipos de turno (E, A, V, B) con colores.
+// No requiere autenticación. Lee el estado de Supabase y se
+// sincroniza automáticamente en tiempo real via WebSockets.
+// ACTUALIZADO: async/await con Supabase en lugar de localStorage.
 // =============================================================
 
-// -----------------------------------------------------------------
-// Colores por tipo de turno
-// -----------------------------------------------------------------
 const TYPE_STYLES = {
     E: { color: '#3B82F6', bg: '#DBEAFE', emoji: '📦', label: 'Órdenes' },
     A: { color: '#10B981', bg: '#D1FAE5', emoji: '📅', label: 'Citas' },
@@ -15,21 +12,14 @@ const TYPE_STYLES = {
     B: { color: '#F59E0B', bg: '#FEF3C7', emoji: '🔬', label: 'Biopsias' }
 };
 
-// -----------------------------------------------------------------
-// Referencias al DOM
-// -----------------------------------------------------------------
 const modulesDisplayGrid = document.getElementById('modules-display-grid');
 const callHistoryList    = document.getElementById('call-history-list');
 const displayTimeEl      = document.getElementById('display-time');
 const displayDateEl      = document.getElementById('display-date');
 
-// Guardamos el último calledAt por módulo para detectar nuevos llamados
 let lastCalledAtMap = {};
 for (let i = 1; i <= 6; i++) lastCalledAtMap[i] = 0;
 
-// -----------------------------------------------------------------
-// startClock: Actualiza el reloj de la pantalla cada segundo.
-// -----------------------------------------------------------------
 function startClock() {
     function tick() {
         const now = new Date();
@@ -45,16 +35,12 @@ function startClock() {
     setInterval(tick, 1000);
 }
 
-// -----------------------------------------------------------------
-// getTypeStyle: Devuelve los estilos del tipo dado (o un default).
-// -----------------------------------------------------------------
 function getTypeStyle(type) {
     return TYPE_STYLES[type] || { color: '#6B7280', bg: '#F3F4F6', emoji: '🎟️', label: '' };
 }
 
 // -----------------------------------------------------------------
-// renderModules: Genera las tarjetas de los 6 módulos en el display.
-// El número de turno se muestra con el color del tipo.
+// renderModules: Genera las tarjetas de los 6 módulos.
 // -----------------------------------------------------------------
 function renderModules(state) {
     modulesDisplayGrid.innerHTML = '';
@@ -93,7 +79,6 @@ function renderModules(state) {
             statusClass = 'status-waiting';
         }
 
-        // Número de turno con color por tipo
         let ticketContent;
         if (mod.currentTicket) {
             const ts = getTypeStyle(mod.currentTicketType);
@@ -127,7 +112,7 @@ function renderModules(state) {
 }
 
 // -----------------------------------------------------------------
-// checkForNewCalls: Detecta nuevos llamados y dispara notificación.
+// checkForNewCalls: Detecta llamados nuevos y dispara notificación.
 // -----------------------------------------------------------------
 function checkForNewCalls(state) {
     const notificationMode = (state.settings && state.settings.notificationMode) || 'sound';
@@ -152,7 +137,7 @@ function checkForNewCalls(state) {
 }
 
 // -----------------------------------------------------------------
-// renderWaitingQueue: Muestra todos los turnos en espera con colores.
+// renderWaitingQueue: Muestra los turnos en espera.
 // -----------------------------------------------------------------
 function renderWaitingQueue(state) {
     const waitingList = [
@@ -166,9 +151,8 @@ function renderWaitingQueue(state) {
     }
 
     callHistoryList.innerHTML = waitingList.map((item) => {
-        const ts          = getTypeStyle(item.type);
-        const priorityBg  = item.isHigh ? '#FEF2F2' : ts.bg;
-        const priorityBorder = item.isHigh ? '#FCA5A5' : ts.color + '50';
+        const ts = getTypeStyle(item.type);
+        const priorityBg     = item.isHigh ? '#FEF2F2' : ts.bg;
 
         return `
             <div class="history-item ${item.isHigh ? 'is-priority' : ''}"
@@ -185,10 +169,10 @@ function renderWaitingQueue(state) {
 }
 
 // -----------------------------------------------------------------
-// refreshDisplay: Renderiza todo el display con el estado actual.
+// refreshDisplay: Carga el estado inicial desde Supabase.
 // -----------------------------------------------------------------
-function refreshDisplay() {
-    const state = getState();
+async function refreshDisplay() {
+    const state = await getState();
     // Sincronizar mapa inicial para no disparar sonido al cargar
     for (let i = 1; i <= 6; i++) {
         if (state.modules[i]) {
@@ -200,7 +184,7 @@ function refreshDisplay() {
 }
 
 // -----------------------------------------------------------------
-// Sincronización en tiempo real
+// Sincronización en tiempo real (WebSocket via Supabase Realtime)
 // -----------------------------------------------------------------
 onStateChange((newState) => {
     checkForNewCalls(newState);

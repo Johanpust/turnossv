@@ -2,12 +2,13 @@
 // admin.js — Lógica del panel del administrador
 // Gestiona módulos (activar/desactivar, tipos permitidos)
 // y reinicio de turnos. Soporta 6 módulos.
+// ACTUALIZADO: usa async/await con Supabase en lugar de localStorage.
 // =============================================================
 
 const session = requireRole('admin');
 
 // -----------------------------------------------------------------
-// Colores/etiquetas por tipo (mismos que en recepcion.js y display.js)
+// Colores/etiquetas por tipo
 // -----------------------------------------------------------------
 const TYPE_STYLES = {
     E: { color: '#3B82F6', bg: '#EFF6FF', emoji: '📦', label: 'Entrega de órdenes' },
@@ -33,8 +34,7 @@ const btnConfirmReset      = document.getElementById('btn-confirm-reset');
 const radioNotificationModes = document.getElementsByName('notification-mode');
 
 // -----------------------------------------------------------------
-// renderModulesGrid: Genera las 6 tarjetas de módulo con estado,
-// toggle de activación y checkboxes de tipos permitidos.
+// renderModulesGrid: Genera las 6 tarjetas de módulo.
 // -----------------------------------------------------------------
 function renderModulesGrid(state) {
     modulesGrid.innerHTML = '';
@@ -45,7 +45,6 @@ function renderModulesGrid(state) {
 
         const allowedTypes = mod.allowedTypes || ['E', 'A', 'V', 'B'];
 
-        // Estado visual de la tarjeta
         let cardClass = 'is-inactive';
         let badgeHtml = '<span class="badge badge-inactive"><span class="dot dot-inactive"></span> Desactivado</span>';
 
@@ -57,14 +56,12 @@ function renderModulesGrid(state) {
             badgeHtml = '<span class="badge badge-active"><span class="dot dot-active"></span> Activo</span>';
         }
 
-        // Turno actual
         const ticketHtml = mod.currentTicket
             ? `<div class="module-ticket-display">${mod.currentTicket}</div>
                <div class="module-doc-id">Doc: ${mod.currentDocId || '—'}</div>`
             : `<div class="module-ticket-empty">Sin turno</div>
                <div class="module-doc-id" style="min-height:20px;"></div>`;
 
-        // Checkboxes de tipos permitidos
         const typeCheckboxes = ['E', 'A', 'V', 'B'].map(type => {
             const style   = TYPE_STYLES[type];
             const checked = allowedTypes.includes(type) ? 'checked' : '';
@@ -92,8 +89,6 @@ function renderModulesGrid(state) {
             </div>
             <div class="module-card-body">
                 ${ticketHtml}
-
-                <!-- Tipos de turno permitidos -->
                 <div style="margin: 0.75rem 0 0.5rem;">
                     <div style="font-size:0.7rem; font-weight:600; color:var(--gray-500); text-transform:uppercase;
                                 letter-spacing:0.05em; margin-bottom:0.35rem;">Tipos que atiende</div>
@@ -101,8 +96,6 @@ function renderModulesGrid(state) {
                         ${typeCheckboxes}
                     </div>
                 </div>
-
-                <!-- Toggle activar/desactivar -->
                 <div class="toggle-wrapper">
                     <span class="toggle-label">${mod.active ? 'Módulo activo' : 'Módulo desactivado'}</span>
                     <label class="toggle-switch" title="${mod.active ? 'Desactivar módulo' : 'Activar módulo'}">
@@ -129,14 +122,12 @@ function updateStats(state) {
     statTotalQueue.textContent = getTotalInQueue(state);
     statHighQueue.textContent  = state.highQueue.length;
 
-    // Módulos activos
     let activeCount = 0;
     for (let i = 1; i <= 6; i++) {
         if (state.modules[i] && state.modules[i].active) activeCount++;
     }
     statActiveModules.textContent = `${activeCount}/6`;
 
-    // Tipos en cola
     const counts = getQueueCountByType(state);
     const typeSummary = Object.entries(counts)
         .filter(([,n]) => n > 0)
@@ -148,8 +139,8 @@ function updateStats(state) {
 // -----------------------------------------------------------------
 // refreshUI: Re-renderiza toda la interfaz del admin.
 // -----------------------------------------------------------------
-function refreshUI() {
-    const state = getState();
+async function refreshUI() {
+    const state = await getState();
     renderModulesGrid(state);
     updateStats(state);
 
@@ -162,10 +153,9 @@ function refreshUI() {
 
 // -----------------------------------------------------------------
 // toggleModule: Activa o desactiva un módulo.
-// Si se desactiva, el turno actual se devuelve a la cola.
 // -----------------------------------------------------------------
-function toggleModule(moduleId, activate) {
-    const state = getState();
+async function toggleModule(moduleId, activate) {
+    const state = await getState();
     const mod   = state.modules[moduleId];
 
     if (!activate) {
@@ -190,16 +180,15 @@ function toggleModule(moduleId, activate) {
         autoAssignToFreeModules(state);
     }
 
-    setState(state);
-    refreshUI();
+    await setState(state);
+    await refreshUI();
 }
 
 // -----------------------------------------------------------------
-// toggleModuleType: Habilita o deshabilita un tipo de turno
-// para un módulo específico.
+// toggleModuleType: Habilita o deshabilita un tipo de turno.
 // -----------------------------------------------------------------
-function toggleModuleType(moduleId, type, enabled) {
-    const state = getState();
+async function toggleModuleType(moduleId, type, enabled) {
+    const state = await getState();
     const mod   = state.modules[moduleId];
 
     if (!mod.allowedTypes) mod.allowedTypes = ['E', 'A', 'V', 'B'];
@@ -210,37 +199,36 @@ function toggleModuleType(moduleId, type, enabled) {
         }
     } else {
         mod.allowedTypes = mod.allowedTypes.filter(t => t !== type);
-        // Garantizar al menos un tipo activo
         if (mod.allowedTypes.length === 0) {
-            mod.allowedTypes = [type]; // Mantener el que se intentó quitar
-            setState(state);
-            refreshUI();
+            mod.allowedTypes = [type];
+            await setState(state);
+            await refreshUI();
             return;
         }
     }
 
-    setState(state);
-    refreshUI();
+    await setState(state);
+    await refreshUI();
 }
 
 // -----------------------------------------------------------------
 // Botón: Activar todos los módulos
 // -----------------------------------------------------------------
-btnActivateAll.addEventListener('click', () => {
-    const state = getState();
+btnActivateAll.addEventListener('click', async () => {
+    const state = await getState();
     for (let i = 1; i <= 6; i++) {
         if (state.modules[i]) state.modules[i].active = true;
     }
     autoAssignToFreeModules(state);
-    setState(state);
-    refreshUI();
+    await setState(state);
+    await refreshUI();
 });
 
 // -----------------------------------------------------------------
 // Botón: Desactivar todos los módulos
 // -----------------------------------------------------------------
-btnDeactivateAll.addEventListener('click', () => {
-    const state = getState();
+btnDeactivateAll.addEventListener('click', async () => {
+    const state = await getState();
     for (let i = 1; i <= 6; i++) {
         const mod = state.modules[i];
         if (!mod) continue;
@@ -260,8 +248,8 @@ btnDeactivateAll.addEventListener('click', () => {
         mod.currentDocId  = null;
         mod.calledAt      = null;
     }
-    setState(state);
-    refreshUI();
+    await setState(state);
+    await refreshUI();
 });
 
 // -----------------------------------------------------------------
@@ -279,22 +267,22 @@ modalReset.addEventListener('click', (e) => {
     if (e.target === modalReset) modalReset.classList.remove('visible');
 });
 
-btnConfirmReset.addEventListener('click', () => {
-    resetState();
+btnConfirmReset.addEventListener('click', async () => {
+    await resetState();
     modalReset.classList.remove('visible');
-    refreshUI();
+    await refreshUI();
 });
 
 // -----------------------------------------------------------------
 // Cambiar modo de notificación
 // -----------------------------------------------------------------
 radioNotificationModes.forEach(radio => {
-    radio.addEventListener('change', (e) => {
+    radio.addEventListener('change', async (e) => {
         if (e.target.checked) {
-            const state = getState();
+            const state = await getState();
             if (!state.settings) state.settings = {};
             state.settings.notificationMode = e.target.value;
-            setState(state);
+            await setState(state);
         }
     });
 });
