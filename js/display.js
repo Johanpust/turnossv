@@ -101,6 +101,8 @@ function renderModules(state) {
         let statusLabel = '';
         let statusClass = '';
 
+        let hasActiveTicketDisplay = false;
+
         if (!mod.active) {
             cardClass   = 'is-inactive';
             statusLabel = 'DESACTIVADO';
@@ -113,14 +115,12 @@ function renderModules(state) {
             cardClass   = 'is-calling';
             statusLabel = 'LLAMANDO';
             statusClass = 'status-active';
-        } else if (mod.isAttending) {
+            hasActiveTicketDisplay = true;
+        } else if (mod.isAttending && mod.currentTicket) {
             cardClass   = '';
             statusLabel = 'ATENDIENDO';
             statusClass = 'status-attending';
-        } else if (mod.currentTicket) {
-            cardClass   = '';
-            statusLabel = 'EN ATENCIÓN';
-            statusClass = 'status-active';
+            hasActiveTicketDisplay = true;
         } else {
             cardClass   = '';
             statusLabel = 'DISPONIBLE';
@@ -128,7 +128,7 @@ function renderModules(state) {
         }
 
         let ticketContent;
-        if (mod.currentTicket) {
+        if (hasActiveTicketDisplay) {
             const ts = getTypeStyle(mod.currentTicketType);
             ticketContent = `
                 <div class="module-ticket-number" style="color:${ts.color};">

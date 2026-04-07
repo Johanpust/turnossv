@@ -81,7 +81,7 @@
                     <form class="ticket-form" id="ticket-form" autocomplete="off" novalidate>
 
                         <div class="input-group" style="margin-bottom: 0.5rem;">
-                            <input type="text" id="doc-id" class="input-field" placeholder="Ej: 12345678 o ABC123" maxlength="20" inputmode="text" autocomplete="off" required />
+                            <input type="text" id="doc-id" class="input-field" placeholder="Ej: 12345678" maxlength="20" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required />
                         </div>
 
                         <!-- Mensaje de validación -->

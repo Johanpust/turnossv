@@ -53,7 +53,7 @@
       <!-- Campo: contraseña -->
       <div class="input-group">
         <label class="input-label" for="password">Contraseña</label>
-        <div class="input-icon-wrapper">
+        <div class="input-icon-wrapper" style="position: relative;">
           <span class="input-icon">🔒</span>
           <input
             type="password"
@@ -61,8 +61,16 @@
             class="input-field"
             placeholder="Ingresa tu contraseña"
             autocomplete="current-password"
+            style="padding-right: 40px;"
             required
           />
+          <button type="button" id="toggle-password" tabindex="-1" style="
+              position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+              background: none; border: none; font-size: 1.1rem; color: #64748b;
+              cursor: pointer; padding: 5px; display: flex; align-items: center; justify-content: center;
+          ">
+            👁️
+          </button>
         </div>
       </div>
 
@@ -91,6 +99,24 @@
 <!-- Scripts: autenticación y lógica de login -->
 <script src="js/auth.js"></script>
 <script src="js/login.js"></script>
+<script>
+    const togglePassword = document.getElementById('toggle-password');
+    const passwordInput = document.getElementById('password');
+
+    if (togglePassword && passwordInput) {
+        togglePassword.addEventListener('click', function () {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            if (type === 'password') {
+                this.textContent = '👁️';
+                this.style.opacity = '1';
+            } else {
+                this.textContent = '👁️‍🗨️';
+                this.style.opacity = '0.5';
+            }
+        });
+    }
+</script>
 
 </body>
 </html>
