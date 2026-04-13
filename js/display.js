@@ -62,11 +62,38 @@ function activateAudio() {
     }
 }
 
-// Wire overlay click
-if (audioOverlay) {
-    audioOverlay.addEventListener('click', activateAudio);
-    audioOverlay.addEventListener('touchend', activateAudio);
+// -----------------------------------------------------------------
+// attemptAutoUnlockAudio: Intenta desbloquear el audio sin
+// requerir un clic, en caso de que el navegador lo permita.
+// -----------------------------------------------------------------
+async function attemptAutoUnlockAudio() {
+    try {
+        const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtxClass) return;
+        
+        sharedAudioCtx = new AudioCtxClass();
+        if (sharedAudioCtx.state === 'running') {
+            audioUnlocked = true;
+            if (audioOverlay) audioOverlay.style.display = 'none';
+            console.log('✅ Audio desbloqueado automáticamente');
+        } else {
+            // Intentar reanudar si está suspendido
+            await sharedAudioCtx.resume();
+            if (sharedAudioCtx.state === 'running') {
+                audioUnlocked = true;
+                if (audioOverlay) audioOverlay.style.display = 'none';
+                console.log('✅ Audio desbloqueado automáticamente vía resume()');
+            }
+        }
+    } catch (e) {
+        // Falló silenciosamente (se requiere interacción)
+    }
 }
+
+// Wire events: cualquier click en el documento quita el overlay
+document.addEventListener('click', activateAudio, { once: true });
+document.addEventListener('touchstart', activateAudio, { once: true });
+document.addEventListener('keydown', activateAudio, { once: true });
 
 function startClock() {
     function tick() {
@@ -278,3 +305,6 @@ onStateChange((newState) => {
 // -----------------------------------------------------------------
 startClock();
 refreshDisplay();
+
+// Intentar un desbloqueo automático poco después de la inicialización
+setTimeout(attemptAutoUnlockAudio, 50);

@@ -107,7 +107,8 @@ function applyModuleState(status, mod) {
         setButtonsEnabled(
             !!mod.currentTicket,
             !!mod.currentTicket,
-            true
+            true,
+            true // canPause
         );
         if (mod.currentTicket) {
             showTicket(mod);
