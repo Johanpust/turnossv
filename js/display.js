@@ -213,7 +213,7 @@ function checkForNewCalls(state) {
 
             if (notificationMode === 'voice') {
                 if (mod.currentTicket) {
-                    announceTicket(mod.currentTicket, i);
+                    announceTicket(mod.currentTicket, i, playBellUnlocked);
                 }
             } else {
                 playBellUnlocked();

@@ -1,8 +1,10 @@
 // =============================================================
-// sound.js — Generación de sonido de campanilla
-// Usa la Web Audio API para generar el sonido sin necesidad
-// de archivos de audio externos. A futuro se puede integrar
-// síntesis de voz con la SpeechSynthesis API.
+// sound.js — Generación de sonido de campanilla y voz TTS
+// Usa la Web Audio API para el sonido de campana y la
+// SpeechSynthesis API para anunciar turnos por voz.
+//
+// IMPORTANTE (Raspberry Pi): Para que la voz funcione instalar:
+//   sudo apt install -y espeak-ng
 // =============================================================
 
 // -----------------------------------------------------------------
@@ -11,24 +13,17 @@
 // -----------------------------------------------------------------
 function playBell() {
     try {
-        // Crear contexto de audio (o reutilizar si ya existe)
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) {
             console.warn('Web Audio API no disponible en este navegador.');
             return;
         }
-
         const ctx = new AudioContext();
-
-        // --- Primer tono de campanilla ---
-        createBellTone(ctx, 880, 0, 0.6);    // La5 — tono principal
-        createBellTone(ctx, 1108, 0, 0.3);   // Armónico superior
-        createBellTone(ctx, 659, 0, 0.2);    // Armónico inferior
-
-        // --- Segundo "ding" con pequeño retraso ---
-        createBellTone(ctx, 1046, 0.35, 0.5); // Do6 — segundo tono
-        createBellTone(ctx, 1318, 0.35, 0.2); // Armónico
-
+        createBellTone(ctx, 880,  0,    0.6);
+        createBellTone(ctx, 1108, 0,    0.3);
+        createBellTone(ctx, 659,  0,    0.2);
+        createBellTone(ctx, 1046, 0.35, 0.5);
+        createBellTone(ctx, 1318, 0.35, 0.2);
     } catch (e) {
         console.error('Error al reproducir campanilla:', e);
     }
@@ -36,72 +31,187 @@ function playBell() {
 
 // -----------------------------------------------------------------
 // createBellTone: Crea un tono individual de la campanilla.
-// ctx: AudioContext
-// frequency: frecuencia del tono en Hz
-// startDelay: retardo en segundos antes de iniciar
-// gainValue: volumen inicial (0–1)
+// ctx: AudioContext | frequency: Hz | startDelay: seg | gainValue: 0-1
 // -----------------------------------------------------------------
 function createBellTone(ctx, frequency, startDelay, gainValue) {
     const oscillator = ctx.createOscillator();
-    const gainNode = ctx.createGain();
+    const gainNode   = ctx.createGain();
 
-    // Tipo de onda sinusoidal para sonido suave
     oscillator.type = 'sine';
     oscillator.frequency.setValueAtTime(frequency, ctx.currentTime + startDelay);
-
-    // Pequeña caída de frecuencia para simular campana real
     oscillator.frequency.exponentialRampToValueAtTime(
         frequency * 0.5,
         ctx.currentTime + startDelay + 1.5
     );
 
-    // Volumen inicial y fundido natural (fade-out)
     gainNode.gain.setValueAtTime(gainValue, ctx.currentTime + startDelay);
     gainNode.gain.exponentialRampToValueAtTime(
         0.001,
         ctx.currentTime + startDelay + 1.5
     );
 
-    // Conectar: oscilador → ganancia → salida
     oscillator.connect(gainNode);
     gainNode.connect(ctx.destination);
-
-    // Iniciar y detener el tono
     oscillator.start(ctx.currentTime + startDelay);
     oscillator.stop(ctx.currentTime + startDelay + 1.5);
+}
+
+// =============================================================
+// SISTEMA DE VOZ TTS
+// =============================================================
+
+// -----------------------------------------------------------------
+// preloadVoices: Pre-carga las voces TTS lo antes posible.
+// En Chrome/Chromium las voces se cargan de forma ASÍNCRONA,
+// por lo que hay que escuchar el evento onvoiceschanged.
+// -----------------------------------------------------------------
+let _voicesReady = false;
+
+function preloadVoices() {
+    if (!window.speechSynthesis) return;
+
+    function checkVoices() {
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length > 0 && !_voicesReady) {
+            _voicesReady = true;
+            const esVoices = voices.filter(v => v.lang.startsWith('es'));
+            console.log(`✅ Voces TTS listas: ${voices.length} total, ${esVoices.length} en español.`);
+            if (esVoices.length > 0) {
+                console.log('Voces ES disponibles:', esVoices.map(v => `${v.name} (${v.lang})`).join(', '));
+            } else {
+                console.warn('⚠️ No hay voces en español. En Raspberry Pi ejecuta: sudo apt install -y espeak-ng');
+            }
+        }
+    }
+
+    // Intento inmediato (algunos navegadores las tienen ya)
+    checkVoices();
+
+    // Escuchar el evento asíncrono de Chrome/Chromium
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.addEventListener('voiceschanged', checkVoices);
+    }
+}
+
+// Pre-cargar voces tan pronto como cargue el script
+preloadVoices();
+
+// -----------------------------------------------------------------
+// getAvailableVoices: Obtiene las voces de forma segura.
+// Si aún no están listas, espera el evento onvoiceschanged.
+// Llama a callback(voices) cuando estén disponibles.
+// -----------------------------------------------------------------
+function getAvailableVoices(callback) {
+    // Intento inmediato
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+        callback(voices);
+        return;
+    }
+
+    // Las voces no están listas todavía — esperar con timeout
+    let resolved = false;
+
+    function onChanged() {
+        if (resolved) return;
+        resolved = true;
+        window.speechSynthesis.removeEventListener('voiceschanged', onChanged);
+        callback(window.speechSynthesis.getVoices());
+    }
+
+    window.speechSynthesis.addEventListener('voiceschanged', onChanged);
+
+    // Timeout de seguridad a 3 segundos
+    setTimeout(() => {
+        if (!resolved) {
+            resolved = true;
+            window.speechSynthesis.removeEventListener('voiceschanged', onChanged);
+            const finalVoices = window.speechSynthesis.getVoices();
+            if (finalVoices.length === 0) {
+                console.warn('⚠️ Tiempo agotado esperando voces TTS.');
+                console.warn('   Raspberry Pi: sudo apt install -y espeak-ng');
+            }
+            callback(finalVoices);
+        }
+    }, 3000);
 }
 
 // -----------------------------------------------------------------
 // announceTicket: Anuncia el turno por voz (SpeechSynthesis API).
 // ticket: código del turno (ej: "A05")
-// moduleId: número del módulo
+// moduleId: número del módulo (ej: 3)
+// fallbackCallback: función a llamar si la voz falla (campanilla)
 // -----------------------------------------------------------------
-function announceTicket(ticket, moduleId) {
-    if (!window.speechSynthesis) return;
+function announceTicket(ticket, moduleId, fallbackCallback) {
+    if (!window.speechSynthesis) {
+        console.warn('SpeechSynthesis API no soportada. Usando campanilla.');
+        if (fallbackCallback) fallbackCallback();
+        return;
+    }
 
     // Cancelar cualquier anuncio previo para evitar que se amontonen
     window.speechSynthesis.cancel();
 
-    const letter = ticket.charAt(0);
-    const number = ticket.slice(1); // Mantenemos el formato original por si tiene ceros
+    // Esperar a que las voces estén listas (fix del bug asíncrono de Chrome)
+    getAvailableVoices((voices) => {
+        if (!voices || voices.length === 0) {
+            console.warn('⚠️ Sin voces TTS disponibles — activando campanilla como respaldo.');
+            if (fallbackCallback) fallbackCallback();
+            return;
+        }
 
-    // Mantenemos las pausas (puntos y comas) para mejor dicción,
-    // pero quitamos las palabras 'letra' y 'número' a petición del usuario.
-    const message = `Turno... ${letter}, ${number}. Pasar al módulo... ${moduleId}.`;
+        // Construir el texto del anuncio
+        const letter  = ticket.charAt(0);
+        const number  = ticket.slice(1);
+        const message = `Turno ${letter} ${number}. Módulo ${moduleId}.`;
 
-    const utterance = new SpeechSynthesisUtterance(message);
-    utterance.lang = 'es-ES';
-    utterance.rate = 0.85; // Un poco más lento para mayor claridad
-    utterance.pitch = 1.0; 
+        const utterance  = new SpeechSynthesisUtterance(message);
+        utterance.lang   = 'es-ES';
+        utterance.rate   = 0.85;
+        utterance.pitch  = 1.0;
+        utterance.volume = 1.0;
 
-    // Intentar buscar una voz en español de buena calidad
-    const voices = window.speechSynthesis.getVoices();
-    const esVoices = voices.filter(v => v.lang.startsWith('es'));
-    if (esVoices.length > 0) {
-        // Tratar de usar una voz premium o de Google/Microsoft si existe
-        const bestVoice = esVoices.find(v => v.name.includes('Premium') || v.name.includes('Google') || v.name.includes('Microsoft')) || esVoices[0];
-        utterance.voice = bestVoice;
-    }
+        // Seleccionar la mejor voz en español disponible
+        const esVoices = voices.filter(v => v.lang.startsWith('es'));
+        if (esVoices.length > 0) {
+            const bestVoice = esVoices.find(v =>
+                v.name.includes('Premium') ||
+                v.name.includes('Google')  ||
+                v.name.includes('Microsoft')
+            ) || esVoices[0];
+            utterance.voice = bestVoice;
+            console.log(`🗣️ Anunciando con voz: ${bestVoice.name} (${bestVoice.lang})`);
+        } else {
+            // Ninguna en español — usar la primera disponible (puede ser inglés/espeak)
+            utterance.voice = voices[0];
+            console.warn(`⚠️ Sin voz ES. Usando: ${voices[0].name} — instala espeak-ng para español`);
+        }
 
-    window.speechSynthesis.speak(utterance);
+        let speechStarted = false;
+
+        utterance.onstart = () => {
+            speechStarted = true;
+            console.log(`🔊 Anunciando: "${message}"`);
+        };
+
+        utterance.onend = () => {
+            console.log('✅ Anuncio completado.');
+        };
+
+        utterance.onerror = (e) => {
+            console.warn('❌ Error TTS:', e.error);
+            if (fallbackCallback) fallbackCallback();
+        };
+
+        window.speechSynthesis.speak(utterance);
+
+        // Timeout de seguridad: si la voz no arrancó en 2s, tocar la campanilla
+        setTimeout(() => {
+            if (!speechStarted && !window.speechSynthesis.speaking) {
+                console.warn('⏱️ La voz no emitió sonido. Activando campanilla.');
+                window.speechSynthesis.cancel();
+                if (fallbackCallback) fallbackCallback();
+            }
+        }, 2000);
+    });
 }
