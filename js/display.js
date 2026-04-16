@@ -66,7 +66,7 @@ function activateAudio() {
 // attemptAutoUnlockAudio: Intenta desbloquear el audio sin
 // requerir un clic, en caso de que el navegador lo permita.
 // -----------------------------------------------------------------
-async function attemptAutoUnlockAudio() {
+function attemptAutoUnlockAudio() {
     try {
         const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
         if (!AudioCtxClass) return;
@@ -78,11 +78,15 @@ async function attemptAutoUnlockAudio() {
             console.log('✅ Audio desbloqueado automáticamente');
         } else {
             // Intentar reanudar si está suspendido
-            await sharedAudioCtx.resume();
-            if (sharedAudioCtx.state === 'running') {
-                audioUnlocked = true;
-                if (audioOverlay) audioOverlay.style.display = 'none';
-                console.log('✅ Audio desbloqueado automáticamente vía resume()');
+            const resumePromise = sharedAudioCtx.resume();
+            if (resumePromise && typeof resumePromise.then === 'function') {
+                resumePromise.then(() => {
+                    if (sharedAudioCtx.state === 'running') {
+                        audioUnlocked = true;
+                        if (audioOverlay) audioOverlay.style.display = 'none';
+                        console.log('✅ Audio desbloqueado automáticamente vía resume()');
+                    }
+                }).catch(() => {});
             }
         }
     } catch (e) {
@@ -234,11 +238,11 @@ function playBellUnlocked() {
             sharedAudioCtx.resume();
         }
         const ctx = sharedAudioCtx;
-        createBellTone(ctx, 880,  0,    0.6);
-        createBellTone(ctx, 1108, 0,    0.3);
-        createBellTone(ctx, 659,  0,    0.2);
-        createBellTone(ctx, 1046, 0.35, 0.5);
-        createBellTone(ctx, 1318, 0.35, 0.2);
+        
+        // Chime profesional de 3 notas ascendentes
+        playChimeTone(ctx, 659.25, 0.00, 0.72, 0.75);   // E5
+        playChimeTone(ctx, 783.99, 0.55, 0.68, 0.75);   // G5
+        playChimeTone(ctx, 1046.5, 1.10, 0.80, 1.10);   // C6
     } catch (e) {
         console.error('Error al reproducir campanilla:', e);
     }
@@ -279,16 +283,19 @@ function renderWaitingQueue(state) {
 // -----------------------------------------------------------------
 // refreshDisplay: Carga el estado inicial desde Supabase.
 // -----------------------------------------------------------------
-async function refreshDisplay() {
-    const state = await getState();
-    // Sincronizar mapa inicial para no disparar sonido al cargar
-    for (let i = 1; i <= 6; i++) {
-        if (state.modules[i]) {
-            lastCalledAtMap[i] = state.modules[i].calledAt || 0;
+function refreshDisplay() {
+    getState().then((state) => {
+        // Sincronizar mapa inicial para no disparar sonido al cargar
+        for (let i = 1; i <= 6; i++) {
+            if (state.modules[i]) {
+                lastCalledAtMap[i] = state.modules[i].calledAt || 0;
+            }
         }
-    }
-    renderModules(state);
-    renderWaitingQueue(state);
+        renderModules(state);
+        renderWaitingQueue(state);
+    }).catch(e => {
+        console.error("Error cargando estado inicial", e);
+    });
 }
 
 // -----------------------------------------------------------------

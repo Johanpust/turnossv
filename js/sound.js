@@ -134,6 +134,9 @@ function getAvailableVoices(callback) {
 // Si las voces fallan, cae al chime como respaldo.
 // -----------------------------------------------------------------
 function announceTicket(ticket, moduleId, fallbackCallback) {
+    // 1. Siempre tocar el chime profesional como preámbulo (DING DONG DONG)
+    playBell();
+
     if (!window.speechSynthesis) {
         if (fallbackCallback) fallbackCallback();
         return;
@@ -171,13 +174,16 @@ function announceTicket(ticket, moduleId, fallbackCallback) {
         utterance.onstart  = () => { started = true; };
         utterance.onerror  = () => { if (fallbackCallback) fallbackCallback(); };
 
-        window.speechSynthesis.speak(utterance);
-
+        // 2. Esperar 1.3 segundos para que el chime termine antes de hablar
         setTimeout(() => {
-            if (!started && !window.speechSynthesis.speaking) {
-                window.speechSynthesis.cancel();
-                if (fallbackCallback) fallbackCallback();
-            }
-        }, 2000);
+            window.speechSynthesis.speak(utterance);
+
+            setTimeout(() => {
+                if (!started && !window.speechSynthesis.speaking) {
+                    window.speechSynthesis.cancel();
+                    if (fallbackCallback) fallbackCallback();
+                }
+            }, 2000);
+        }, 1300);
     });
 }

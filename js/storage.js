@@ -88,72 +88,74 @@ function _sanitizeState(parsed) {
 // getState: Lee y devuelve el estado actual desde Supabase.
 // Retorna el estado por defecto si no existe o hay error.
 // -----------------------------------------------------------------
-async function getState() {
-    try {
-        const { data, error } = await supabaseClient
-            .from('app_state')
-            .select('state')
-            .eq('id', SUPABASE_ROW_ID)
-            .single();
-
-        if (error || !data) {
-            console.warn('getState: no hay datos, retornando estado por defecto.', error);
+function getState() {
+    return supabaseClient
+        .from('app_state')
+        .select('state')
+        .eq('id', SUPABASE_ROW_ID)
+        .single()
+        .then(response => {
+            const data = response.data;
+            const error = response.error;
+            if (error || !data) {
+                console.warn('getState: no hay datos, retornando estado por defecto.', error);
+                return JSON.parse(JSON.stringify(DEFAULT_STATE));
+            }
+            return _sanitizeState(data.state);
+        })
+        .catch(e => {
+            console.error('Error leyendo estado desde Supabase:', e);
             return JSON.parse(JSON.stringify(DEFAULT_STATE));
-        }
-
-        return _sanitizeState(data.state);
-    } catch (e) {
-        console.error('Error leyendo estado desde Supabase:', e);
-        return JSON.parse(JSON.stringify(DEFAULT_STATE));
-    }
+        });
 }
 
 // -----------------------------------------------------------------
 // setState: Guarda el estado en Supabase y marca timestamp.
 // -----------------------------------------------------------------
-async function setState(newState) {
-    try {
-        newState.lastUpdated = Date.now();
-        const { error } = await supabaseClient
-            .from('app_state')
-            .update({ state: newState })
-            .eq('id', SUPABASE_ROW_ID);
-
-        if (error) {
-            console.error('Error guardando estado en Supabase:', error);
-        }
-    } catch (e) {
-        console.error('Error en setState:', e);
-    }
+function setState(newState) {
+    newState.lastUpdated = Date.now();
+    return supabaseClient
+        .from('app_state')
+        .update({ state: newState })
+        .eq('id', SUPABASE_ROW_ID)
+        .then(response => {
+            if (response.error) {
+                console.error('Error guardando estado en Supabase:', response.error);
+            }
+        })
+        .catch(e => {
+            console.error('Error en setState:', e);
+        });
 }
 
 // -----------------------------------------------------------------
 // resetState: Reinicia todo el sistema de turnos al estado inicial.
 // Conserva la configuración de módulos (active, allowedTypes).
 // -----------------------------------------------------------------
-async function resetState() {
-    const current = await getState();
-    const fresh = JSON.parse(JSON.stringify(DEFAULT_STATE));
+function resetState() {
+    return getState().then(current => {
+        const fresh = JSON.parse(JSON.stringify(DEFAULT_STATE));
 
-    for (let i = 1; i <= 6; i++) {
-        if (current.modules[i]) {
-            fresh.modules[i].active       = current.modules[i].active;
-            fresh.modules[i].allowedTypes = current.modules[i].allowedTypes || ['E', 'A', 'V', 'B'];
+        for (let i = 1; i <= 6; i++) {
+            if (current.modules[i]) {
+                fresh.modules[i].active       = current.modules[i].active;
+                fresh.modules[i].allowedTypes = current.modules[i].allowedTypes || ['E', 'A', 'V', 'B'];
+            }
+            fresh.modules[i].paused           = false;
+            fresh.modules[i].currentTicket    = null;
+            fresh.modules[i].currentTicketType = null;
+            fresh.modules[i].currentDocId     = null;
+            fresh.modules[i].calledAt         = null;
+            fresh.modules[i].isAttending      = false;
+            fresh.modules[i].assignedAt       = 0;
+            fresh.modules[i].callLogs         = [];
+            fresh.modules[i].finishedTickets  = [];
         }
-        fresh.modules[i].paused           = false;
-        fresh.modules[i].currentTicket    = null;
-        fresh.modules[i].currentTicketType = null;
-        fresh.modules[i].currentDocId     = null;
-        fresh.modules[i].calledAt         = null;
-        fresh.modules[i].isAttending      = false;
-        fresh.modules[i].assignedAt       = 0;
-        fresh.modules[i].callLogs         = [];
-        fresh.modules[i].finishedTickets  = [];
-    }
 
-    fresh.settings = current.settings || DEFAULT_STATE.settings;
+        fresh.settings = current.settings || DEFAULT_STATE.settings;
 
-    await setState(fresh);
+        return setState(fresh);
+    });
 }
 
 // -----------------------------------------------------------------
