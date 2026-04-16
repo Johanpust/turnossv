@@ -40,24 +40,60 @@ ESPEAK_VOICE    = "es"   # idioma/voz: "es" = español genérico
 last_called_at = {str(i): 0 for i in range(1, 7)}
 
 # ═══════════════════════════════════════════════════════════════════
-#  FUNCIÓN DE VOZ — llama a espeak-ng directamente
+#  FUNCIÓN DE VOZ — espeak-ng → aplay (evita audio rayado en HDMI)
+#
+#  El problema: espeak-ng reproduce directamente en ALSA a 22050 Hz
+#  pero el HDMI del Pi necesita 44100 Hz → resultado: sonido rayado.
+#  Solución: espeak-ng genera el audio en RAM (--stdout) y aplay lo
+#  reproduce con la tasa correcta, limpio y sin distorsión.
 # ═══════════════════════════════════════════════════════════════════
 def speak(text):
-    """Anuncia el texto por los altavoces del sistema."""
+    """Anuncia el texto por los altavoces del sistema (sin distorsión)."""
     try:
-        subprocess.Popen([
-            'espeak-ng',
-            '-v', ESPEAK_VOICE,
-            '-s', str(ESPEAK_SPEED),
-            '-a', str(ESPEAK_VOLUME),
-            '-p', str(ESPEAK_PITCH),
-            text
-        ])
+        # Método 1: espeak-ng → pipe → aplay (audio limpio en HDMI)
+        espeak_proc = subprocess.Popen(
+            [
+                'espeak-ng',
+                '-v', ESPEAK_VOICE,
+                '-s', str(ESPEAK_SPEED),
+                '-a', str(ESPEAK_VOLUME),
+                '-p', str(ESPEAK_PITCH),
+                '--stdout',   # ← salida de audio en binario por stdout
+                text
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL
+        )
+        subprocess.Popen(
+            [
+                'aplay',
+                '-r', '22050',   # tasa de muestreo de espeak-ng
+                '-f', 'S16_LE',  # formato 16-bit little-endian
+                '-c', '1',       # mono
+                '-q',            # silencioso (sin mensajes de aplay)
+            ],
+            stdin=espeak_proc.stdout,
+            stderr=subprocess.DEVNULL
+        )
+        espeak_proc.stdout.close()
         print(f"  📢 Anunciando: \"{text}\"")
-    except FileNotFoundError:
-        print("  ❌ ERROR: espeak-ng no está instalado.")
-        print("     Solución: sudo apt install -y espeak-ng")
-        sys.exit(1)
+
+    except FileNotFoundError as e:
+        if 'espeak-ng' in str(e):
+            print("  ❌ ERROR: espeak-ng no está instalado.")
+            print("     Solución: sudo apt install -y espeak-ng")
+            sys.exit(1)
+        else:
+            # aplay no encontrado — intentar reproducción directa como respaldo
+            print("  ⚠️  aplay no encontrado, usando reproducción directa...")
+            try:
+                subprocess.Popen([
+                    'espeak-ng', '-v', ESPEAK_VOICE,
+                    '-s', str(ESPEAK_SPEED), '-a', str(ESPEAK_VOLUME),
+                    '-p', str(ESPEAK_PITCH), text
+                ])
+            except Exception as e2:
+                print(f"  ❌ Error al reproducir: {e2}")
     except Exception as e:
         print(f"  ❌ Error al reproducir voz: {e}")
 
