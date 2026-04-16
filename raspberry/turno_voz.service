@@ -1,0 +1,23 @@
+[Unit]
+Description=Sistema de Voz para Turnos Hospitalarios
+Documentation=https://turnossv.vercel.app
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Ruta al script Python — asegúrate de que el archivo esté aquí
+ExecStart=/usr/bin/python3 /home/pi/turno_voz.py
+
+# Reiniciar automáticamente si falla
+Restart=always
+RestartSec=5
+
+# Usuario que corre el servicio (cambiar si tu usuario no es "pi")
+User=pi
+
+# Salida de logs al journal (ver con: sudo journalctl -u turno_voz -f)
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
