@@ -1,15 +1,14 @@
 // =============================================================
-// sound.js — Generación de sonido de campanilla y voz TTS
-// Usa la Web Audio API para el sonido de campana y la
-// SpeechSynthesis API para anunciar turnos por voz.
+// sound.js — Alerta sonora profesional para Sistema de Turnos
 //
-// IMPORTANTE (Raspberry Pi): Para que la voz funcione instalar:
-//   sudo apt install -y espeak-ng
+// Chime de 3 notas ascendentes (E5 → G5 → C6) con envolvente
+// natural tipo campana. Sin TTS, sin archivos externos.
+// Compatible con Web Audio API en Chromium/Raspberry Pi.
 // =============================================================
 
 // -----------------------------------------------------------------
-// playBell: Reproduce un sonido de campanilla usando osciladores.
-// Crea un sonido que imita una campana con fundido (fade-out).
+// playBell: Chime profesional de 3 notas — E5, G5, C6
+// Sonido tipo hospital/clínica: suave, claro y no invasivo.
 // -----------------------------------------------------------------
 function playBell() {
     try {
@@ -18,53 +17,74 @@ function playBell() {
             console.warn('Web Audio API no disponible en este navegador.');
             return;
         }
+
         const ctx = new AudioContext();
-        createBellTone(ctx, 880,  0,    0.6);
-        createBellTone(ctx, 1108, 0,    0.3);
-        createBellTone(ctx, 659,  0,    0.2);
-        createBellTone(ctx, 1046, 0.35, 0.5);
-        createBellTone(ctx, 1318, 0.35, 0.2);
+
+        // Chime ascendente: E5 → G5 → C6
+        // Parámetros: (ctx, frecuencia, inicio_seg, volumen, duracion_seg)
+        playChimeTone(ctx, 659.25, 0.00, 0.72, 0.75);   // E5 — primera nota
+        playChimeTone(ctx, 783.99, 0.55, 0.68, 0.75);   // G5 — segunda nota
+        playChimeTone(ctx, 1046.5, 1.10, 0.80, 1.10);   // C6 — nota final
+
     } catch (e) {
-        console.error('Error al reproducir campanilla:', e);
+        console.error('Error al reproducir chime:', e);
     }
 }
 
 // -----------------------------------------------------------------
-// createBellTone: Crea un tono individual de la campanilla.
-// ctx: AudioContext | frequency: Hz | startDelay: seg | gainValue: 0-1
+// playChimeTone: Genera una nota individual del chime.
+// Usa onda sinusoidal + armónicos suaves para cuerpo más rico.
+// Envolvente: ataque rápido (20ms) + decaimiento exponencial.
 // -----------------------------------------------------------------
-function createBellTone(ctx, frequency, startDelay, gainValue) {
-    const oscillator = ctx.createOscillator();
-    const gainNode   = ctx.createGain();
+function playChimeTone(ctx, frequency, startDelay, gain, duration) {
+    // — Fundamental —
+    const osc1     = ctx.createOscillator();
+    const gain1    = ctx.createGain();
+    osc1.type      = 'sine';
+    osc1.frequency.setValueAtTime(frequency, ctx.currentTime + startDelay);
 
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(frequency, ctx.currentTime + startDelay);
-    oscillator.frequency.exponentialRampToValueAtTime(
-        frequency * 0.5,
-        ctx.currentTime + startDelay + 1.5
-    );
+    // — 2° armónico (octava) — suave, da cuerpo al sonido —
+    const osc2     = ctx.createOscillator();
+    const gain2    = ctx.createGain();
+    osc2.type      = 'sine';
+    osc2.frequency.setValueAtTime(frequency * 2, ctx.currentTime + startDelay);
 
-    gainNode.gain.setValueAtTime(gainValue, ctx.currentTime + startDelay);
-    gainNode.gain.exponentialRampToValueAtTime(
-        0.001,
-        ctx.currentTime + startDelay + 1.5
-    );
+    // — 3° armónico — muy suave, solo textura —
+    const osc3     = ctx.createOscillator();
+    const gain3    = ctx.createGain();
+    osc3.type      = 'sine';
+    osc3.frequency.setValueAtTime(frequency * 3, ctx.currentTime + startDelay);
 
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
-    oscillator.start(ctx.currentTime + startDelay);
-    oscillator.stop(ctx.currentTime + startDelay + 1.5);
+    // Mezclador de armónicos
+    const mixer    = ctx.createGain();
+    gain1.gain.setValueAtTime(gain,        ctx.currentTime);
+    gain2.gain.setValueAtTime(gain * 0.20, ctx.currentTime);
+    gain3.gain.setValueAtTime(gain * 0.08, ctx.currentTime);
+
+    // Envolvente maestra: ataque rápido (20ms) + decaimiento tipo campana
+    const now = ctx.currentTime + startDelay;
+    mixer.gain.setValueAtTime(0.001, now);
+    mixer.gain.linearRampToValueAtTime(1.0, now + 0.020);          // ataque
+    mixer.gain.exponentialRampToValueAtTime(0.001, now + duration); // decaimiento
+
+    // Conexiones: osciladores → ganancias → mezclador → salida
+    osc1.connect(gain1); gain1.connect(mixer);
+    osc2.connect(gain2); gain2.connect(mixer);
+    osc3.connect(gain3); gain3.connect(mixer);
+    mixer.connect(ctx.destination);
+
+    // Iniciar y detener
+    [osc1, osc2, osc3].forEach(osc => {
+        osc.start(now);
+        osc.stop(now + duration + 0.05);
+    });
 }
 
 // =============================================================
-// SISTEMA DE VOZ TTS
+// SISTEMA DE VOZ TTS (usado solo si el modo es 'voice')
+// Con fix del bug asíncrono de Chrome/Chromium
 // =============================================================
 
-// -----------------------------------------------------------------
-// preloadVoices: Pre-carga las voces TTS lo antes posible.
-// En Chrome/Chromium las voces se cargan de forma ASÍNCRONA,
-// por lo que hay que escuchar el evento onvoiceschanged.
-// -----------------------------------------------------------------
 let _voicesReady = false;
 
 function preloadVoices() {
@@ -75,92 +95,59 @@ function preloadVoices() {
         if (voices.length > 0 && !_voicesReady) {
             _voicesReady = true;
             const esVoices = voices.filter(v => v.lang.startsWith('es'));
-            console.log(`✅ Voces TTS listas: ${voices.length} total, ${esVoices.length} en español.`);
-            if (esVoices.length > 0) {
-                console.log('Voces ES disponibles:', esVoices.map(v => `${v.name} (${v.lang})`).join(', '));
-            } else {
-                console.warn('⚠️ No hay voces en español. En Raspberry Pi ejecuta: sudo apt install -y espeak-ng');
-            }
+            console.log(`✅ Voces TTS: ${voices.length} total, ${esVoices.length} en español.`);
         }
     }
 
-    // Intento inmediato (algunos navegadores las tienen ya)
     checkVoices();
-
-    // Escuchar el evento asíncrono de Chrome/Chromium
     if (window.speechSynthesis.onvoiceschanged !== undefined) {
         window.speechSynthesis.addEventListener('voiceschanged', checkVoices);
     }
 }
 
-// Pre-cargar voces tan pronto como cargue el script
 preloadVoices();
 
-// -----------------------------------------------------------------
-// getAvailableVoices: Obtiene las voces de forma segura.
-// Si aún no están listas, espera el evento onvoiceschanged.
-// Llama a callback(voices) cuando estén disponibles.
-// -----------------------------------------------------------------
 function getAvailableVoices(callback) {
-    // Intento inmediato
     const voices = window.speechSynthesis.getVoices();
-    if (voices.length > 0) {
-        callback(voices);
-        return;
-    }
+    if (voices.length > 0) { callback(voices); return; }
 
-    // Las voces no están listas todavía — esperar con timeout
     let resolved = false;
-
     function onChanged() {
         if (resolved) return;
         resolved = true;
         window.speechSynthesis.removeEventListener('voiceschanged', onChanged);
         callback(window.speechSynthesis.getVoices());
     }
-
     window.speechSynthesis.addEventListener('voiceschanged', onChanged);
-
-    // Timeout de seguridad a 3 segundos
     setTimeout(() => {
         if (!resolved) {
             resolved = true;
             window.speechSynthesis.removeEventListener('voiceschanged', onChanged);
-            const finalVoices = window.speechSynthesis.getVoices();
-            if (finalVoices.length === 0) {
-                console.warn('⚠️ Tiempo agotado esperando voces TTS.');
-                console.warn('   Raspberry Pi: sudo apt install -y espeak-ng');
-            }
-            callback(finalVoices);
+            callback(window.speechSynthesis.getVoices());
         }
     }, 3000);
 }
 
 // -----------------------------------------------------------------
 // announceTicket: Anuncia el turno por voz (SpeechSynthesis API).
-// ticket: código del turno (ej: "A05")
-// moduleId: número del módulo (ej: 3)
-// fallbackCallback: función a llamar si la voz falla (campanilla)
+// Se usa solo cuando el modo de notificación es 'voice'.
+// Si las voces fallan, cae al chime como respaldo.
 // -----------------------------------------------------------------
 function announceTicket(ticket, moduleId, fallbackCallback) {
     if (!window.speechSynthesis) {
-        console.warn('SpeechSynthesis API no soportada. Usando campanilla.');
         if (fallbackCallback) fallbackCallback();
         return;
     }
 
-    // Cancelar cualquier anuncio previo para evitar que se amontonen
     window.speechSynthesis.cancel();
 
-    // Esperar a que las voces estén listas (fix del bug asíncrono de Chrome)
     getAvailableVoices((voices) => {
         if (!voices || voices.length === 0) {
-            console.warn('⚠️ Sin voces TTS disponibles — activando campanilla como respaldo.');
+            console.warn('⚠️ Sin voces TTS — usando chime como respaldo.');
             if (fallbackCallback) fallbackCallback();
             return;
         }
 
-        // Construir el texto del anuncio
         const letter  = ticket.charAt(0);
         const number  = ticket.slice(1);
         const message = `Turno ${letter} ${number}. Módulo ${moduleId}.`;
@@ -171,44 +158,23 @@ function announceTicket(ticket, moduleId, fallbackCallback) {
         utterance.pitch  = 1.0;
         utterance.volume = 1.0;
 
-        // Seleccionar la mejor voz en español disponible
         const esVoices = voices.filter(v => v.lang.startsWith('es'));
         if (esVoices.length > 0) {
-            const bestVoice = esVoices.find(v =>
+            utterance.voice = esVoices.find(v =>
                 v.name.includes('Premium') ||
                 v.name.includes('Google')  ||
                 v.name.includes('Microsoft')
             ) || esVoices[0];
-            utterance.voice = bestVoice;
-            console.log(`🗣️ Anunciando con voz: ${bestVoice.name} (${bestVoice.lang})`);
-        } else {
-            // Ninguna en español — usar la primera disponible (puede ser inglés/espeak)
-            utterance.voice = voices[0];
-            console.warn(`⚠️ Sin voz ES. Usando: ${voices[0].name} — instala espeak-ng para español`);
         }
 
-        let speechStarted = false;
-
-        utterance.onstart = () => {
-            speechStarted = true;
-            console.log(`🔊 Anunciando: "${message}"`);
-        };
-
-        utterance.onend = () => {
-            console.log('✅ Anuncio completado.');
-        };
-
-        utterance.onerror = (e) => {
-            console.warn('❌ Error TTS:', e.error);
-            if (fallbackCallback) fallbackCallback();
-        };
+        let started = false;
+        utterance.onstart  = () => { started = true; };
+        utterance.onerror  = () => { if (fallbackCallback) fallbackCallback(); };
 
         window.speechSynthesis.speak(utterance);
 
-        // Timeout de seguridad: si la voz no arrancó en 2s, tocar la campanilla
         setTimeout(() => {
-            if (!speechStarted && !window.speechSynthesis.speaking) {
-                console.warn('⏱️ La voz no emitió sonido. Activando campanilla.');
+            if (!started && !window.speechSynthesis.speaking) {
                 window.speechSynthesis.cancel();
                 if (fallbackCallback) fallbackCallback();
             }
