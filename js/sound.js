@@ -129,61 +129,17 @@ function getAvailableVoices(callback) {
 }
 
 // -----------------------------------------------------------------
-// announceTicket: Anuncia el turno por voz (SpeechSynthesis API).
-// Se usa solo cuando el modo de notificación es 'voice'.
-// Si las voces fallan, cae al chime como respaldo.
+// announceTicket: Anuncia el turno (ahora solo con el Chime profesional).
+// Eliminada la voz robótica (TTS) por solicitud del usuario debido 
+// a la baja calidad del sintetizador en Raspberry Pi / Linux.
 // -----------------------------------------------------------------
 function announceTicket(ticket, moduleId, fallbackCallback) {
-    // 1. Siempre tocar el chime profesional como preámbulo (DING DONG DONG)
+    // Tocar el chime profesional (DING DONG DONG)
     playBell();
 
-    if (!window.speechSynthesis) {
-        if (fallbackCallback) fallbackCallback();
-        return;
+    // Como ya eliminamos la voz, simplemente llamamos al 
+    // callback de respaldo si existe para que fluya la ejecución
+    if (fallbackCallback) {
+        setTimeout(fallbackCallback, 1500); 
     }
-
-    window.speechSynthesis.cancel();
-
-    getAvailableVoices((voices) => {
-        if (!voices || voices.length === 0) {
-            console.warn('⚠️ Sin voces TTS — usando chime como respaldo.');
-            if (fallbackCallback) fallbackCallback();
-            return;
-        }
-
-        const letter  = ticket.charAt(0);
-        const number  = ticket.slice(1);
-        const message = `Turno ${letter} ${number}. Módulo ${moduleId}.`;
-
-        const utterance  = new SpeechSynthesisUtterance(message);
-        utterance.lang   = 'es-ES';
-        utterance.rate   = 0.85;
-        utterance.pitch  = 1.0;
-        utterance.volume = 1.0;
-
-        const esVoices = voices.filter(v => v.lang.startsWith('es'));
-        if (esVoices.length > 0) {
-            utterance.voice = esVoices.find(v =>
-                v.name.includes('Premium') ||
-                v.name.includes('Google')  ||
-                v.name.includes('Microsoft')
-            ) || esVoices[0];
-        }
-
-        let started = false;
-        utterance.onstart  = () => { started = true; };
-        utterance.onerror  = () => { if (fallbackCallback) fallbackCallback(); };
-
-        // 2. Esperar 1.3 segundos para que el chime termine antes de hablar
-        setTimeout(() => {
-            window.speechSynthesis.speak(utterance);
-
-            setTimeout(() => {
-                if (!started && !window.speechSynthesis.speaking) {
-                    window.speechSynthesis.cancel();
-                    if (fallbackCallback) fallbackCallback();
-                }
-            }, 2000);
-        }, 1300);
-    });
 }
