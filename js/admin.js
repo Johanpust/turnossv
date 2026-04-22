@@ -302,6 +302,85 @@ radioNotificationModes.forEach(radio => {
 onStateChange((newState) => { renderFromState(newState); });
 
 // -----------------------------------------------------------------
+// loadReportPreview: Carga y muestra la tabla previa del reporte
+// para la fecha seleccionada en el date picker.
+// -----------------------------------------------------------------
+async function loadReportPreview() {
+    const dateInput = document.getElementById('report-date-input');
+    const previewBody = document.getElementById('report-preview-body');
+    const previewSection = document.getElementById('report-preview-section');
+    const downloadBtn = document.getElementById('btn-download-excel');
+    const noDataMsg = document.getElementById('report-no-data');
+    const loadingMsg = document.getElementById('report-loading');
+
+    if (!dateInput || !dateInput.value) return;
+
+    const dateStr = dateInput.value; // YYYY-MM-DD
+
+    previewSection.style.display = 'block';
+    loadingMsg.style.display = 'block';
+    noDataMsg.style.display = 'none';
+    previewBody.innerHTML = '';
+    downloadBtn.disabled = true;
+
+    const { rows, summary } = await fetchAttendanceSummaryByDate(dateStr);
+
+    loadingMsg.style.display = 'none';
+
+    if (!rows || rows.length === 0) {
+        noDataMsg.style.display = 'block';
+        return;
+    }
+
+    // Renderizar tabla de resumen por módulo
+    const modIds = Object.keys(summary).map(Number).sort((a,b) => a - b);
+    previewBody.innerHTML = modIds.map(modId => {
+        const s = summary[modId];
+        return `
+            <tr>
+                <td><strong>Módulo ${s.moduleId}</strong></td>
+                <td style="text-align:center;">${s.total}</td>
+                <td style="text-align:center;">
+                    <span style="color:#3B82F6;font-weight:700;">E:${s.byType.E}</span>
+                    <span style="color:#10B981;font-weight:700;"> A:${s.byType.A}</span>
+                    <span style="color:#8B5CF6;font-weight:700;"> V:${s.byType.V}</span>
+                    <span style="color:#F59E0B;font-weight:700;"> B:${s.byType.B}</span>
+                </td>
+                <td style="text-align:center;">${formatSecondsToMinutes(s.avgSeconds)}</td>
+            </tr>
+        `;
+    }).join('');
+
+    // Fila total
+    const totalAll = modIds.reduce((acc, id) => acc + summary[id].total, 0);
+    previewBody.innerHTML += `
+        <tr style="border-top:2px solid var(--gray-200); font-weight:700; background:var(--gray-50);">
+            <td>TOTAL</td>
+            <td style="text-align:center;">${totalAll}</td>
+            <td></td>
+            <td></td>
+        </tr>
+    `;
+
+    downloadBtn.disabled = false;
+    downloadBtn.onclick = () => downloadExcel(dateStr);
+}
+
+// -----------------------------------------------------------------
 // Inicialización
 // -----------------------------------------------------------------
-refreshUI();
+(async () => {
+    await checkAndAutoReset();  // Reinicio automático si es un nuevo día
+    await refreshUI();
+
+    // Configurar el date picker con la fecha de hoy y event listener
+    const dateInput = document.getElementById('report-date-input');
+    if (dateInput) {
+        dateInput.value = new Date().toISOString().slice(0, 10);
+        dateInput.addEventListener('change', loadReportPreview);
+    }
+
+    // Cargar preview automáticamente para hoy
+    loadReportPreview();
+})();
+

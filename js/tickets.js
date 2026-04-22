@@ -174,20 +174,38 @@ function completeCurrentTicket(state, moduleId) {
     const mod = state.modules[moduleId];
     if (!mod.currentTicket) return;
 
+    const finishedAt = Date.now();
+
     if (!mod.finishedTickets) mod.finishedTickets = [];
     mod.finishedTickets.push({
-        ticket: mod.currentTicket,
-        type: mod.currentTicketType,
-        docId: mod.currentDocId,
-        finishedAt: Date.now()
+        ticket:     mod.currentTicket,
+        type:       mod.currentTicketType,
+        docId:      mod.currentDocId,
+        assignedAt: mod.assignedAt,
+        attendingAt: mod.attendingAt || null,
+        finishedAt: finishedAt
     });
 
-    mod.currentTicket = null;
+    // Persistir en Supabase para el reporte diario
+    if (typeof logAttendance === 'function') {
+        logAttendance({
+            moduleId:    moduleId,
+            ticket:      mod.currentTicket,
+            ticketType:  mod.currentTicketType,
+            docId:       mod.currentDocId,
+            assignedAt:  mod.assignedAt   || null,
+            attendingAt: mod.attendingAt  || null,
+            finishedAt:  finishedAt
+        });
+    }
+
+    mod.currentTicket     = null;
     mod.currentTicketType = null;
-    mod.currentDocId = null;
-    mod.calledAt = null;
-    mod.isAttending = false;
-    mod.assignedAt = 0;
+    mod.currentDocId      = null;
+    mod.calledAt          = null;
+    mod.isAttending       = false;
+    mod.assignedAt        = 0;
+    mod.attendingAt       = null;
 
     autoAssignToFreeModules(state);
 }
@@ -229,6 +247,7 @@ function callCurrentTicket(state, moduleId) {
 function attendCurrentTicket(state, moduleId) {
     const mod = state.modules[moduleId];
     if (!mod.currentTicket) return;
-    mod.isAttending = true;
-    mod.calledAt = null;
+    mod.isAttending  = true;
+    mod.attendingAt  = Date.now();  // Hora exacta en que comienza la atención
+    mod.calledAt     = null;
 }

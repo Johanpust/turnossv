@@ -26,6 +26,7 @@ function defaultModule() {
         calledAt: null,
         isAttending: false,
         assignedAt: 0,
+        attendingAt: null,
         callLogs: [],
         finishedTickets: [],
         allowedTypes: ['E', 'A', 'V', 'B']
@@ -49,6 +50,7 @@ const DEFAULT_STATE = {
     settings: {
         notificationMode: 'voice'
     },
+    lastResetDate: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
     lastUpdated: 0,
 };
 
@@ -69,6 +71,9 @@ function _sanitizeState(parsed) {
             if (parsed.modules[i].currentTicketType === undefined) {
                 parsed.modules[i].currentTicketType = null;
             }
+            if (parsed.modules[i].attendingAt === undefined) {
+                parsed.modules[i].attendingAt = null;
+            }
         }
     }
 
@@ -80,6 +85,10 @@ function _sanitizeState(parsed) {
             parsed.ticketCounter[t] = 1;
         }
     });
+
+    if (!parsed.lastResetDate) {
+        parsed.lastResetDate = new Date().toISOString().slice(0, 10);
+    }
 
     return parsed;
 }
@@ -184,7 +193,38 @@ function onStateChange(callback) {
         )
         .subscribe((status) => {
             if (status === 'SUBSCRIBED') {
-                console.log('✅ Conectado al canal de tiempo real de Supabase');
+                console.log('\u2705 Conectado al canal de tiempo real de Supabase');
             }
         });
+}
+
+// -----------------------------------------------------------------
+// checkAndAutoReset: Comprueba si hoy es un día distinto al del
+// último reinicio. Si es así, reinicia todos los turnos automáticamente.
+// Llamar al cargar cada página del sistema.
+// -----------------------------------------------------------------
+async function checkAndAutoReset() {
+    const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const state = await getState();
+
+    if (state.lastResetDate && state.lastResetDate === todayStr) {
+        return; // Ya se reinició hoy, nada que hacer
+    }
+
+    console.log(`\uD83D\uDD04 Nuevo día detectado (${todayStr}). Reiniciando sistema automáticamente...`);
+    const fresh = JSON.parse(JSON.stringify(DEFAULT_STATE));
+
+    // Conservar configuración de módulos (tipos permitidos, activo)
+    for (let i = 1; i <= 6; i++) {
+        if (state.modules[i]) {
+            fresh.modules[i].active       = state.modules[i].active;
+            fresh.modules[i].allowedTypes = state.modules[i].allowedTypes || ['E', 'A', 'V', 'B'];
+        }
+    }
+
+    fresh.settings       = state.settings || DEFAULT_STATE.settings;
+    fresh.lastResetDate  = todayStr;
+
+    await setState(fresh);
+    console.log('\u2705 Sistema reiniciado automáticamente para el nuevo día.');
 }

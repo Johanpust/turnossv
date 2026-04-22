@@ -381,4 +381,8 @@ btnToggleAttended.addEventListener('click', () => {
 // -----------------------------------------------------------------
 // Inicialización
 // -----------------------------------------------------------------
-getState().then(state => updateUI(state));
+(async () => {
+    await checkAndAutoReset();  // Reinicio automático si es un nuevo día
+    const state = await getState();
+    updateUI(state);
+})();

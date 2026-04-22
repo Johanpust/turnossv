@@ -126,6 +126,53 @@
 
         </div>
 
+        <!-- === Sección: Reporte del Día === -->
+        <div class="report-section" id="report-section">
+            <div class="report-section-header">
+                <div class="report-title-group">
+                    <div class="report-icon">📊</div>
+                    <div>
+                        <h2>Reporte de Atenciones</h2>
+                        <p>Descarga el Excel de atenciones por módulo para cualquier fecha del historial</p>
+                    </div>
+                </div>
+                <div class="report-controls">
+                    <div class="report-date-group">
+                        <label for="report-date-input">📅 Fecha</label>
+                        <input type="date" id="report-date-input" class="report-date-input" />
+                    </div>
+                    <button class="btn btn-excel" id="btn-download-excel" disabled>
+                        <span>📥</span> Descargar Excel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabla de previsualización -->
+            <div id="report-preview-section" style="display:none; margin-top: 1.5rem;">
+                <div id="report-loading" style="text-align:center; color:var(--gray-400); padding:1rem; display:none;">
+                    ⏳ Cargando registros...
+                </div>
+                <div id="report-no-data" style="display:none; text-align:center; color:var(--gray-400); padding:1.5rem;">
+                    📭 No hay registros de atención para esta fecha.
+                </div>
+                <table class="report-table" id="report-preview-table">
+                    <thead>
+                        <tr>
+                            <th>Módulo</th>
+                            <th>Total Atendidos</th>
+                            <th>Por Tipo</th>
+                            <th>Tiempo Promedio</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-preview-body">
+                    </tbody>
+                </table>
+                <p style="font-size:0.75rem; color:var(--gray-400); margin-top:0.75rem; text-align:right;">
+                    ⚡ El Excel detallado incluye cada turno individualmente con hora de inicio, fin y documento del paciente.
+                </p>
+            </div>
+        </div>
+
     </div><!-- /admin-body -->
 
     <!-- === Modal de confirmación de reinicio === -->
@@ -153,10 +200,13 @@
         window.SUPABASE_ANON_KEY = "sb_publishable_g10mW7MFKDaLsQWKeNCo3g_6sTwhiEL";
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- SheetJS para generación de Excel sin backend -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <script src="js/supabase-client.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/tickets.js"></script>
+    <script src="js/reports.js"></script>
     <script src="js/admin.js"></script>
 
 </body>

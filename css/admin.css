@@ -433,3 +433,176 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* === SECCIÓN: Reporte de Atenciones === */
+.report-section {
+    background: white;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--gray-100);
+    padding: var(--space-6);
+    margin-top: var(--space-6);
+    animation: fadeInUp 0.4s ease both;
+    animation-delay: 0.2s;
+}
+
+.report-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+}
+
+.report-title-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.report-icon {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, #10B981, #059669);
+    border-radius: var(--radius-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.report-title-group h2 {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 0.2rem;
+}
+
+.report-title-group p {
+    font-size: var(--font-size-sm);
+    color: var(--gray-500);
+}
+
+.report-controls {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.report-date-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.report-date-group label {
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--gray-600);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.report-date-input {
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    padding: 0.55rem 0.9rem;
+    font-size: var(--font-size-sm);
+    font-family: var(--font-family);
+    color: var(--gray-900);
+    background: var(--gray-50);
+    transition: border-color 0.18s, box-shadow 0.18s;
+    cursor: pointer;
+}
+
+.report-date-input:focus {
+    outline: none;
+    border-color: #10B981;
+    box-shadow: 0 0 0 3px rgba(16,185,129,0.15);
+    background: white;
+}
+
+/* Botón Descargar Excel */
+.btn-excel {
+    background: linear-gradient(135deg, #10B981, #059669);
+    color: white;
+    border: none;
+    border-radius: var(--radius-lg);
+    padding: 0.6rem 1.3rem;
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    font-family: var(--font-family);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    box-shadow: 0 2px 8px rgba(16,185,129,0.35);
+    transition: all 0.18s ease;
+}
+
+.btn-excel:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(16,185,129,0.4);
+    background: linear-gradient(135deg, #059669, #047857);
+}
+
+.btn-excel:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Tabla de previsualización */
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-sm);
+}
+
+.report-table thead tr {
+    background: var(--gray-50);
+    border-bottom: 2px solid var(--gray-200);
+}
+
+.report-table th {
+    padding: 0.65rem 1rem;
+    text-align: left;
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    color: var(--gray-600);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.report-table td {
+    padding: 0.7rem 1rem;
+    color: var(--gray-700);
+    border-bottom: 1px solid var(--gray-100);
+    vertical-align: middle;
+}
+
+.report-table tr:last-child td {
+    border-bottom: none;
+}
+
+.report-table tbody tr:hover {
+    background: var(--gray-50);
+}
+
+@media (max-width: 640px) {
+    .report-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .report-controls {
+        width: 100%;
+    }
+    .btn-excel {
+        width: 100%;
+        justify-content: center;
+    }
+}
