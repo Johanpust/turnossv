@@ -44,15 +44,17 @@ function logAttendance(record) {
 }
 
 // -----------------------------------------------------------------
-// fetchAttendanceByDate: Obtiene todos los registros de atención
-// para una fecha específica (formato 'YYYY-MM-DD').
-// Retorna array de filas ordenadas por módulo y hora de finalización.
+// fetchAttendanceByDateRange: Obtiene todos los registros de atención
+// en un rango de fechas (formato 'YYYY-MM-DD').
+// Retorna array de filas ordenadas por fecha, módulo y hora.
 // -----------------------------------------------------------------
-function fetchAttendanceByDate(dateStr) {
+function fetchAttendanceByDateRange(startDateStr, endDateStr) {
     return supabaseClient
         .from('attendance_log')
         .select('*')
-        .eq('date', dateStr)
+        .gte('date', startDateStr)
+        .lte('date', endDateStr)
+        .order('date', { ascending: true })
         .order('module_id', { ascending: true })
         .order('finished_at', { ascending: true })
         .then(response => {
@@ -63,17 +65,16 @@ function fetchAttendanceByDate(dateStr) {
             return response.data || [];
         })
         .catch(e => {
-            console.error('Error en fetchAttendanceByDate:', e);
+            console.error('Error en fetchAttendanceByDateRange:', e);
             return [];
         });
 }
 
 // -----------------------------------------------------------------
-// fetchAttendanceSummaryByDate: Devuelve resumen agrupado por módulo
-// para mostrar en la tabla previa del admin antes de descargar.
+// fetchAttendanceSummaryByDateRange: Devuelve resumen agrupado por módulo
 // -----------------------------------------------------------------
-function fetchAttendanceSummaryByDate(dateStr) {
-    return fetchAttendanceByDate(dateStr).then(rows => {
+function fetchAttendanceSummaryByDateRange(startDateStr, endDateStr) {
+    return fetchAttendanceByDateRange(startDateStr, endDateStr).then(rows => {
         const summary = {};
         rows.forEach(row => {
             const key = row.module_id;
@@ -122,14 +123,14 @@ const REPORT_TYPE_LABELS = {
 };
 
 // -----------------------------------------------------------------
-// downloadExcel: Genera y descarga el archivo Excel para la fecha dada.
+// downloadExcel: Genera y descarga el archivo Excel para el rango.
 // Usa la librería SheetJS (xlsx) cargada via CDN en admin.html.
 // -----------------------------------------------------------------
-async function downloadExcel(dateStr) {
-    const rows = await fetchAttendanceByDate(dateStr);
+async function downloadExcel(startDateStr, endDateStr) {
+    const rows = await fetchAttendanceByDateRange(startDateStr, endDateStr);
 
     if (!rows || rows.length === 0) {
-        alert(`No hay registros de atención para el ${dateStr}.`);
+        alert(`No hay registros de atención para este rango de fechas.`);
         return;
     }
 
@@ -143,6 +144,7 @@ async function downloadExcel(dateStr) {
 
         return {
             '#':                    idx + 1,
+            'Fecha':                row.date,
             'Módulo':               `Módulo ${row.module_id}`,
             'Tipo de Turno':        row.ticket_type,
             'Descripción Tipo':     REPORT_TYPE_LABELS[row.ticket_type] || row.ticket_type,
@@ -150,18 +152,18 @@ async function downloadExcel(dateStr) {
             'Documento Paciente':   row.doc_id || '—',
             'Hora Inicio Atención': horaInicio ? formatTime(horaInicio) : '—',
             'Hora Fin Atención':    horaFin    ? formatTime(horaFin)    : '—',
-            'Tiempo Atención (min)': tiempoMin !== null ? tiempoMin : '—',
-            'Fecha':                dateStr
+            'Tiempo Atención (min)': tiempoMin !== null ? tiempoMin : '—'
         };
     });
 
-    // Crear workbook con SheetJS
+    // Crear workbook y worksheet principal
     const wb  = XLSX.utils.book_new();
     const ws  = XLSX.utils.json_to_sheet(excelData);
 
     // Ajustar anchos de columna
     ws['!cols'] = [
         { wch: 4  },  // #
+        { wch: 12 },  // Fecha
         { wch: 12 },  // Módulo
         { wch: 12 },  // Tipo
         { wch: 22 },  // Descripción
@@ -169,11 +171,10 @@ async function downloadExcel(dateStr) {
         { wch: 20 },  // Documento
         { wch: 20 },  // Hora Inicio
         { wch: 20 },  // Hora Fin
-        { wch: 22 },  // Tiempo (min)
-        { wch: 12 },  // Fecha
+        { wch: 22 }   // Tiempo (min)
     ];
 
-    XLSX.utils.book_append_sheet(wb, ws, `Atenciones ${dateStr}`);
+    XLSX.utils.book_append_sheet(wb, ws, `Atenciones`);
 
     // Segunda hoja: Resumen por módulo
     const resumenData = [];
@@ -207,8 +208,30 @@ async function downloadExcel(dateStr) {
     XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen por Módulo');
 
     // Descargar
-    const fileName = `Atenciones_${dateStr}.xlsx`;
+    const dateLabel = (startDateStr === endDateStr) ? startDateStr : `${startDateStr}_a_${endDateStr}`;
+    const fileName = `Atenciones_${dateLabel}.xlsx`;
     XLSX.writeFile(wb, fileName);
+}
+
+// -----------------------------------------------------------------
+// deleteOldRecords: Borra registros anteriores a 'dateStr' en Supabase
+// -----------------------------------------------------------------
+function deleteOldRecords(dateStr) {
+    return supabaseClient
+        .from('attendance_log')
+        .delete()
+        .lt('date', dateStr)
+        .then(response => {
+            if (response.error) {
+                console.error('Error eliminando registros:', response.error);
+                return { success: false, error: response.error };
+            }
+            return { success: true };
+        })
+        .catch(e => {
+            console.error('Error en deleteOldRecords:', e);
+            return { success: false, error: e };
+        });
 }
 
 // -----------------------------------------------------------------

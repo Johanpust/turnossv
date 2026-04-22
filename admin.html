@@ -138,8 +138,12 @@
                 </div>
                 <div class="report-controls">
                     <div class="report-date-group">
-                        <label for="report-date-input">📅 Fecha</label>
-                        <input type="date" id="report-date-input" class="report-date-input" />
+                        <label for="report-date-start">📅 Desde</label>
+                        <input type="date" id="report-date-start" class="report-date-input" />
+                    </div>
+                    <div class="report-date-group">
+                        <label for="report-date-end">📅 Hasta</label>
+                        <input type="date" id="report-date-end" class="report-date-input" />
                     </div>
                     <button class="btn btn-excel" id="btn-download-excel" disabled>
                         <span>📥</span> Descargar Excel
@@ -153,7 +157,7 @@
                     ⏳ Cargando registros...
                 </div>
                 <div id="report-no-data" style="display:none; text-align:center; color:var(--gray-400); padding:1.5rem;">
-                    📭 No hay registros de atención para esta fecha.
+                    📭 No hay registros de atención para el rango seleccionado.
                 </div>
                 <table class="report-table" id="report-preview-table">
                     <thead>
@@ -173,6 +177,28 @@
             </div>
         </div>
 
+        <!-- === Sección: Limpiar Historial === -->
+        <div class="report-section" style="margin-top: 1.5rem; border-color:#fecaca;">
+            <div class="report-section-header">
+                <div class="report-title-group">
+                    <div class="report-icon" style="background: linear-gradient(135deg, #EF4444, #DC2626); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);">🗑️</div>
+                    <div>
+                        <h2>Liberar Espacio</h2>
+                        <p>Elimina permanentemente registros muy antiguos de Supabase para no exceder cuotas</p>
+                    </div>
+                </div>
+                <div class="report-controls" style="align-items: flex-end;">
+                    <div class="report-date-group">
+                        <label for="delete-date-input">Borrar registros anteriores a:</label>
+                        <input type="date" id="delete-date-input" class="report-date-input" style="border-color:#fca5a5;" />
+                    </div>
+                    <button class="btn" id="btn-delete-records" style="background:#EF4444; color:white; border:none;" disabled>
+                        Eliminar Historial
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </div><!-- /admin-body -->
 
     <!-- === Modal de confirmación de reinicio === -->
@@ -189,6 +215,22 @@
             <div class="modal-actions">
                 <button class="btn btn-secondary" id="btn-cancel-reset">Cancelar</button>
                 <button class="btn btn-danger" id="btn-confirm-reset">Sí, reiniciar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- === Modal de confirmación de eliminación === -->
+    <div class="modal-overlay" id="modal-delete" style="display: none;">
+        <div class="modal-box" style="border-top: 5px solid #EF4444;">
+            <div class="modal-icon" style="background: #fee2e2; color: #EF4444;">⚠️</div>
+            <div class="modal-title">¿Eliminar historial antiguo?</div>
+            <div class="modal-message">
+                Estás a punto de eliminar <strong>permanentemente</strong> los registros de Supabase <strong>anteriores al <span id="delete-date-display">...</span></strong>.<br><br>
+                Esta acción <span style="color:#DC2626; font-weight:bold;">NO se puede deshacer</span>. ¿Deseas continuar?
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="btn-cancel-delete">Cancelar</button>
+                <button class="btn" id="btn-confirm-delete" style="background:#EF4444; color:white; border:none;">Sí, eliminar</button>
             </div>
         </div>
     </div>

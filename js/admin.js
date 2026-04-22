@@ -303,19 +303,43 @@ onStateChange((newState) => { renderFromState(newState); });
 
 // -----------------------------------------------------------------
 // loadReportPreview: Carga y muestra la tabla previa del reporte
-// para la fecha seleccionada en el date picker.
+// para el rango de fechas seleccionado.
 // -----------------------------------------------------------------
 async function loadReportPreview() {
-    const dateInput = document.getElementById('report-date-input');
+    const startDateInput = document.getElementById('report-date-start');
+    const endDateInput = document.getElementById('report-date-end');
     const previewBody = document.getElementById('report-preview-body');
     const previewSection = document.getElementById('report-preview-section');
     const downloadBtn = document.getElementById('btn-download-excel');
     const noDataMsg = document.getElementById('report-no-data');
     const loadingMsg = document.getElementById('report-loading');
 
-    if (!dateInput || !dateInput.value) return;
+    if (!startDateInput || !endDateInput) return;
 
-    const dateStr = dateInput.value; // YYYY-MM-DD
+    const startStr = startDateInput.value; // YYYY-MM-DD
+    const endStr = endDateInput.value;
+
+    if (!startStr || !endStr) {
+        downloadBtn.disabled = true;
+        return;
+    }
+
+    if (startStr > endStr) {
+        alert("La fecha 'Desde' no puede ser mayor a la fecha 'Hasta'.");
+        startDateInput.value = endStr;
+        return;
+    }
+
+    // Calcular días de diferencia, max permitimos 31 días.
+    const diffTime = Math.abs(new Date(endStr) - new Date(startStr));
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    if (diffDays > 31) {
+        alert("El rango máximo permitido es de 31 días para no saturar el navegador.");
+        // ajustamos start date a 31 dias antes
+        const newStart = new Date(new Date(endStr).getTime() - (31 * 24 * 60 * 60 * 1000));
+        startDateInput.value = _getLocalDateStr(newStart);
+        return;
+    }
 
     previewSection.style.display = 'block';
     loadingMsg.style.display = 'block';
@@ -323,7 +347,7 @@ async function loadReportPreview() {
     previewBody.innerHTML = '';
     downloadBtn.disabled = true;
 
-    const { rows, summary } = await fetchAttendanceSummaryByDate(dateStr);
+    const { rows, summary } = await fetchAttendanceSummaryByDateRange(startStr, endStr);
 
     loadingMsg.style.display = 'none';
 
@@ -363,7 +387,7 @@ async function loadReportPreview() {
     `;
 
     downloadBtn.disabled = false;
-    downloadBtn.onclick = () => downloadExcel(dateStr);
+    downloadBtn.onclick = () => downloadExcel(startStr, endStr);
 }
 
 // -----------------------------------------------------------------
@@ -373,14 +397,67 @@ async function loadReportPreview() {
     await checkAndAutoReset();  // Reinicio automático si es un nuevo día
     await refreshUI();
 
-    // Configurar el date picker con la fecha LOCAL de hoy y event listener
-    const dateInput = document.getElementById('report-date-input');
-    if (dateInput) {
-        // Usar fecha LOCAL (no UTC) para evitar desfase horario en Colombia UTC-5
-        const now = new Date();
-        const localDateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-        dateInput.value = localDateStr;
-        dateInput.addEventListener('change', loadReportPreview);
+    // Configurar date pickers
+    const startDateInput = document.getElementById('report-date-start');
+    const endDateInput = document.getElementById('report-date-end');
+    const deleteDateInput = document.getElementById('delete-date-input');
+    
+    const now = new Date();
+    const localDateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    
+    if (startDateInput && endDateInput) {
+        startDateInput.value = localDateStr;
+        endDateInput.value = localDateStr;
+        
+        // No permitir seleccionar fechas futuras
+        startDateInput.max = localDateStr;
+        endDateInput.max = localDateStr;
+
+        startDateInput.addEventListener('change', loadReportPreview);
+        endDateInput.addEventListener('change', loadReportPreview);
+    }
+
+    // Configurar Borrado de historial
+    const btnDelete = document.getElementById('btn-delete-records');
+    if (deleteDateInput && btnDelete) {
+        deleteDateInput.max = localDateStr;
+        deleteDateInput.addEventListener('change', (e) => {
+            btnDelete.disabled = !e.target.value;
+        });
+
+        const modalDelete = document.getElementById('modal-delete');
+        const btnCancelDel = document.getElementById('btn-cancel-delete');
+        const btnConfirmDel = document.getElementById('btn-confirm-delete');
+        const deleteDisplay = document.getElementById('delete-date-display');
+
+        btnDelete.addEventListener('click', () => {
+            deleteDisplay.textContent = deleteDateInput.value;
+            modalDelete.style.display = 'flex';
+        });
+
+        btnCancelDel.addEventListener('click', () => {
+            modalDelete.style.display = 'none';
+        });
+
+        btnConfirmDel.addEventListener('click', async () => {
+            btnConfirmDel.disabled = true;
+            btnConfirmDel.textContent = "Eliminando...";
+            
+            const res = await deleteOldRecords(deleteDateInput.value);
+            
+            modalDelete.style.display = 'none';
+            btnConfirmDel.disabled = false;
+            btnConfirmDel.textContent = "Sí, eliminar";
+
+            if (res.success) {
+                alert(`¡Historial anterior al ${deleteDateInput.value} eliminado correctamente!`);
+                deleteDateInput.value = '';
+                btnDelete.disabled = true;
+                loadReportPreview();
+            } else {
+                alert("Hubo un error al eliminar el historial.");
+            }
+        });
     }
 
     // Cargar preview automáticamente para hoy

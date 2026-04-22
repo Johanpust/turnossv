@@ -6,18 +6,20 @@
 
 // -----------------------------------------------------------------
 // generateNextTicketCode: Genera el código del próximo ticket
-// para el tipo dado (ej: E001, A023, V999 → V001).
-// Modifica el estado y devuelve el código generado.
+// para el tipo dado. E, A, V: 01-99. B: 001-020.
 // -----------------------------------------------------------------
 function generateNextTicketCode(state, type) {
-    if (!state.ticketCounter[type] || state.ticketCounter[type] > 999) {
+    let limit = (type === 'B') ? 20 : 99;
+    let padding = (type === 'B') ? 3 : 2;
+
+    if (!state.ticketCounter[type] || state.ticketCounter[type] > limit) {
         state.ticketCounter[type] = 1;
     }
     const number = state.ticketCounter[type];
-    const code = `${type}${String(number).padStart(3, '0')}`;
+    const code = `${type}${String(number).padStart(padding, '0')}`;
 
-    // Avanzar el contador; cicla a 1 después de 999
-    state.ticketCounter[type] = (number >= 999) ? 1 : number + 1;
+    // Avanzar el contador; cicla a 1 después del límite
+    state.ticketCounter[type] = (number >= limit) ? 1 : number + 1;
 
     return code;
 }
@@ -28,8 +30,14 @@ function generateNextTicketCode(state, type) {
 // -----------------------------------------------------------------
 function getNextTicketPreview(state, type) {
     if (!type) return '—';
+    let limit = (type === 'B') ? 20 : 99;
+    let padding = (type === 'B') ? 3 : 2;
+
+    if (!state.ticketCounter[type] || state.ticketCounter[type] > limit) {
+        state.ticketCounter[type] = 1;
+    }
     const number = state.ticketCounter[type] || 1;
-    return `${type}${String(number).padStart(3, '0')}`;
+    return `${type}${String(number).padStart(padding, '0')}`;
 }
 
 // -----------------------------------------------------------------
