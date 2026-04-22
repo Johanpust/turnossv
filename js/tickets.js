@@ -10,7 +10,7 @@
 // -----------------------------------------------------------------
 function generateNextTicketCode(state, type) {
     let limit = (type === 'B') ? 20 : 99;
-    let padding = (type === 'B') ? 3 : 2;
+    let padding = 2; // TODOS usan 2 dígitos (ej: V01, B01)
 
     if (!state.ticketCounter[type] || state.ticketCounter[type] > limit) {
         state.ticketCounter[type] = 1;
@@ -31,7 +31,7 @@ function generateNextTicketCode(state, type) {
 function getNextTicketPreview(state, type) {
     if (!type) return '—';
     let limit = (type === 'B') ? 20 : 99;
-    let padding = (type === 'B') ? 3 : 2;
+    let padding = 2; // TODOS usan 2 dígitos
 
     if (!state.ticketCounter[type] || state.ticketCounter[type] > limit) {
         state.ticketCounter[type] = 1;
