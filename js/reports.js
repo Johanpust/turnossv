@@ -1,8 +1,14 @@
-// =============================================================
-// reports.js — Gestión de reportes de atención diaria
-// Guarda cada atención completada en la tabla `attendance_log`
-// de Supabase y permite descargar reportes en Excel por fecha.
-// =============================================================
+// -----------------------------------------------------------------
+// getLocalDateStr: Devuelve la fecha local como 'YYYY-MM-DD'
+// Usa la hora del dispositivo (Colombia UTC-5), NO UTC.
+// -----------------------------------------------------------------
+function getLocalDateStr(timestamp) {
+    const d = timestamp ? new Date(timestamp) : new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
 
 // -----------------------------------------------------------------
 // logAttendance: Guarda un registro de atención en Supabase.
@@ -15,7 +21,7 @@ function logAttendance(record) {
         : (record.assignedAt ? Math.floor((record.finishedAt - record.assignedAt) / 1000) : null);
 
     const row = {
-        date:              new Date(record.finishedAt).toISOString().slice(0, 10), // YYYY-MM-DD
+        date:              getLocalDateStr(record.finishedAt),   // Fecha LOCAL, no UTC
         module_id:         record.moduleId,
         ticket:            record.ticket,
         ticket_type:       record.ticketType,

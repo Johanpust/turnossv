@@ -373,10 +373,13 @@ async function loadReportPreview() {
     await checkAndAutoReset();  // Reinicio automático si es un nuevo día
     await refreshUI();
 
-    // Configurar el date picker con la fecha de hoy y event listener
+    // Configurar el date picker con la fecha LOCAL de hoy y event listener
     const dateInput = document.getElementById('report-date-input');
     if (dateInput) {
-        dateInput.value = new Date().toISOString().slice(0, 10);
+        // Usar fecha LOCAL (no UTC) para evitar desfase horario en Colombia UTC-5
+        const now = new Date();
+        const localDateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        dateInput.value = localDateStr;
         dateInput.addEventListener('change', loadReportPreview);
     }
 

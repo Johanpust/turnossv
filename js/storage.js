@@ -50,9 +50,18 @@ const DEFAULT_STATE = {
     settings: {
         notificationMode: 'voice'
     },
-    lastResetDate: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
+    lastResetDate: _getLocalDateStr(),  // Fecha local, no UTC
     lastUpdated: 0,
 };
+
+// Helper: devuelve la fecha LOCAL como 'YYYY-MM-DD' (hora del dispositivo)
+function _getLocalDateStr(d) {
+    const date = d ? new Date(d) : new Date();
+    const y    = date.getFullYear();
+    const m    = String(date.getMonth() + 1).padStart(2, '0');
+    const day  = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
 
 // -----------------------------------------------------------------
 // _sanitizeState: Asegura que el estado tiene todas las propiedades
@@ -87,7 +96,7 @@ function _sanitizeState(parsed) {
     });
 
     if (!parsed.lastResetDate) {
-        parsed.lastResetDate = new Date().toISOString().slice(0, 10);
+        parsed.lastResetDate = _getLocalDateStr();
     }
 
     return parsed;
@@ -204,7 +213,7 @@ function onStateChange(callback) {
 // Llamar al cargar cada página del sistema.
 // -----------------------------------------------------------------
 async function checkAndAutoReset() {
-    const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const todayStr = _getLocalDateStr();  // Fecha LOCAL, no UTC
     const state = await getState();
 
     if (state.lastResetDate && state.lastResetDate === todayStr) {
