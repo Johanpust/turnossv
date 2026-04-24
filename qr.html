@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Código QR — Kiosco de Turnos</title>
+    <link rel="stylesheet" href="css/main.css">
+    <!-- Cargar librería QRCode.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            background-color: var(--gray-100);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .qr-card {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+        .qr-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--gray-800);
+            margin-bottom: 0.5rem;
+        }
+        .qr-subtitle {
+            font-size: 1.1rem;
+            color: var(--gray-500);
+            margin-bottom: 2rem;
+        }
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: white;
+            border: 2px dashed var(--gray-300);
+            border-radius: 12px;
+        }
+        #qrcode img {
+            max-width: 100%;
+            height: auto;
+        }
+        .print-btn {
+            background-color: var(--primary-600);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            transition: all 0.2s;
+        }
+        .print-btn:hover {
+            background-color: var(--primary-700);
+            transform: translateY(-2px);
+        }
+        .admin-link {
+            display: inline-block;
+            margin-top: 1.5rem;
+            color: var(--gray-500);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .admin-link:hover {
+            color: var(--primary-600);
+        }
+
+        /* Estilos para impresión */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .qr-card {
+                box-shadow: none;
+                border: none;
+                padding: 0;
+            }
+            .print-btn, .admin-link {
+                display: none;
+            }
+            .qr-title {
+                font-size: 3rem;
+            }
+            #qrcode {
+                border: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="qr-card">
+        <div class="qr-title">Escanea aquí</div>
+        <div class="qr-subtitle">Para obtener tu ficha de <b>Entrega de Órdenes</b></div>
+        
+        <div id="qrcode"></div>
+        
+        <div style="font-size: 1.2rem; font-weight: 700; color: var(--gray-700); margin-bottom: 2rem;">
+            Apunta la cámara de tu celular
+        </div>
+
+        <button class="print-btn" onclick="window.print()">🖨️ Imprimir Cartel</button>
+        <br>
+        <a href="admin.html" class="admin-link">← Volver al Panel de Administrador</a>
+    </div>
+
+    <script>
+        // Obtener la URL actual y reemplazar qr.html por kiosco.html
+        const currentUrl = window.location.href;
+        const kioscoUrl = currentUrl.replace('qr.html', 'kiosco.html');
+
+        // Generar el código QR
+        new QRCode(document.getElementById("qrcode"), {
+            text: kioscoUrl,
+            width: 300,
+            height: 300,
+            colorDark : "#111827",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+    </script>
+</body>
+</html>

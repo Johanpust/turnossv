@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kiosco de Autogestión</title>
+    <link rel="stylesheet" href="css/main.css">
+    <style>
+        body {
+            background-color: var(--gray-50);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            padding: 1rem;
+            text-align: center;
+            font-family: 'Inter', sans-serif;
+        }
+        .kiosco-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2.5rem 1.5rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            max-width: 400px;
+            width: 100%;
+        }
+        .kiosco-logo {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        .kiosco-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--gray-800);
+            margin-bottom: 0.5rem;
+        }
+        .kiosco-subtitle {
+            font-size: 0.95rem;
+            color: var(--gray-500);
+            margin-bottom: 2rem;
+        }
+        .input-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        .kiosco-input {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.25rem;
+            border: 2px solid var(--gray-200);
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .kiosco-input:focus {
+            outline: none;
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 4px var(--primary-50);
+        }
+        .btn-kiosco {
+            width: 100%;
+            padding: 1.25rem;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: white;
+            background: var(--primary-600);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn-kiosco:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+        }
+        .btn-kiosco:disabled {
+            background: var(--gray-300);
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+        /* Vista de éxito */
+        #success-view {
+            display: none;
+        }
+        .ticket-huge {
+            font-size: 4rem;
+            font-weight: 900;
+            color: var(--primary-600);
+            margin: 1rem 0;
+            letter-spacing: -2px;
+        }
+        .wait-time-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--amber-50);
+            color: var(--amber-600);
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-top: 1rem;
+            border: 1px solid var(--amber-200);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="kiosco-card" id="form-view">
+        <div class="kiosco-logo">🏥</div>
+        <div class="kiosco-title">Auto-Servicio</div>
+        <div class="kiosco-subtitle">Solicita tu ficha para <b>Entrega de Órdenes</b> sin hacer fila en recepción.</div>
+
+        <div class="input-group">
+            <label for="doc-id">Número de Documento</label>
+            <input type="number" id="doc-id" class="kiosco-input" placeholder="Ej: 12345678" pattern="\d*">
+        </div>
+
+        <button class="btn-kiosco" id="btn-generate" disabled>
+            <span>📦</span> Obtener Ficha
+        </button>
+        <div id="error-msg" style="color:var(--danger-500); font-size:0.85rem; margin-top:1rem; font-weight:600; display:none;"></div>
+    </div>
+
+    <div class="kiosco-card" id="success-view">
+        <div class="kiosco-logo">✅</div>
+        <div class="kiosco-title" style="color:var(--success-600)">¡Ficha Generada!</div>
+        <div class="kiosco-subtitle">Por favor, toma asiento y espera a ser llamado en la pantalla.</div>
+        
+        <div style="background:var(--gray-50); padding:1rem; border-radius:12px; border:1px solid var(--gray-200); margin: 1.5rem 0;">
+            <div style="font-size:0.85rem; color:var(--gray-500); text-transform:uppercase; font-weight:700;">Tu número es</div>
+            <div class="ticket-huge" id="final-ticket">E01</div>
+            <div style="font-size:0.9rem; color:var(--gray-600); font-weight:600;">📦 Entrega de Órdenes</div>
+        </div>
+
+        <div class="wait-time-badge">
+            <span>⏱️</span> <span id="wait-time">Espera: ~5 min</span>
+        </div>
+
+        <div style="margin-top: 2rem; color:var(--gray-400); font-size:0.8rem;">
+            Esta pantalla se recargará automáticamente en <span id="countdown">10</span>s...
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        window.SUPABASE_URL = "https://hhngizubxqpfanlvzhnn.supabase.co";
+        window.SUPABASE_ANON_KEY = "sb_publishable_g10mW7MFKDaLsQWKeNCo3g_6sTwhiEL";
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/tickets.js"></script>
+    <script src="js/kiosco.js"></script>
+
+</body>
+</html>

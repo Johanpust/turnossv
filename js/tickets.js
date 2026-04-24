@@ -259,3 +259,26 @@ function attendCurrentTicket(state, moduleId) {
     mod.attendingAt  = Date.now();  // Hora exacta en que comienza la atención
     mod.calledAt     = null;
 }
+
+// -----------------------------------------------------------------
+// calculateEstimatedWaitTime: Devuelve el tiempo estimado en minutos
+// -----------------------------------------------------------------
+function calculateEstimatedWaitTime(state) {
+    let activeModules = 0;
+    for (let i = 1; i <= 7; i++) {
+        if (state.modules[i] && state.modules[i].active && !state.modules[i].paused) {
+            activeModules++;
+        }
+    }
+    
+    const divisor = activeModules > 0 ? activeModules : 1;
+    const totalInQueue = getTotalInQueue(state);
+    
+    // Asumimos 3 minutos promedio por turno
+    const avgMinutesPerPatient = 3;
+    
+    const estimatedWait = Math.ceil((totalInQueue / divisor) * avgMinutesPerPatient);
+    
+    // Devolvemos el tiempo (mínimo 1 minuto si hay cola, 0 si la cola está vacía)
+    return totalInQueue === 0 ? 0 : Math.max(1, estimatedWait);
+}

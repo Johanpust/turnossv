@@ -76,28 +76,60 @@ function fetchAttendanceByDateRange(startDateStr, endDateStr) {
 function fetchAttendanceSummaryByDateRange(startDateStr, endDateStr) {
     return fetchAttendanceByDateRange(startDateStr, endDateStr).then(rows => {
         const summary = {};
+        const totalGlobalTurnos = rows.length;
+
         rows.forEach(row => {
             const key = row.module_id;
             if (!summary[key]) {
-                summary[key] = { moduleId: key, total: 0, byType: { E: 0, A: 0, V: 0, B: 0 }, avgSeconds: 0, totalSeconds: 0 };
+                summary[key] = { 
+                    moduleId: key, 
+                    total: 0, 
+                    byType: { E: 0, A: 0, V: 0, B: 0 }, 
+                    totalDemoraSecs: 0, 
+                    totalAtencionSecs: 0 
+                };
             }
             summary[key].total++;
             if (summary[key].byType[row.ticket_type] !== undefined) {
                 summary[key].byType[row.ticket_type]++;
             }
-            if (row.attention_seconds && row.attention_seconds > 0) {
-                summary[key].totalSeconds += row.attention_seconds;
+
+            const asig = row.assigned_at ? new Date(row.assigned_at).getTime() : 0;
+            const aten = row.attending_at ? new Date(row.attending_at).getTime() : 0;
+            const fin  = row.finished_at ? new Date(row.finished_at).getTime() : 0;
+
+            if (asig && aten) {
+                summary[key].totalDemoraSecs += Math.floor((aten - asig) / 1000);
+            }
+            if (aten && fin) {
+                summary[key].totalAtencionSecs += Math.floor((fin - aten) / 1000);
+            } else if (row.attention_seconds > 0) {
+                summary[key].totalAtencionSecs += row.attention_seconds;
             }
         });
 
-        // Calcular promedio de tiempo de atención por módulo
+        // Calcular promedios y porcentajes
         Object.values(summary).forEach(mod => {
-            if (mod.total > 0 && mod.totalSeconds > 0) {
-                mod.avgSeconds = Math.round(mod.totalSeconds / mod.total);
+            // Promedios
+            mod.avgDemoraSecs = mod.total > 0 && mod.totalDemoraSecs > 0 ? Math.round(mod.totalDemoraSecs / mod.total) : 0;
+            mod.avgAtencionSecs = mod.total > 0 && mod.totalAtencionSecs > 0 ? Math.round(mod.totalAtencionSecs / mod.total) : 0;
+            mod.avgSeconds = mod.avgAtencionSecs; // Para compatibilidad con tabla antigua
+
+            // Productividad (Eficiencia de Tiempo)
+            const totalOperativoSecs = mod.totalDemoraSecs + mod.totalAtencionSecs;
+            mod.productividadPct = 0;
+            if (totalOperativoSecs > 0) {
+                mod.productividadPct = Math.round((mod.totalAtencionSecs / totalOperativoSecs) * 100);
+            }
+
+            // Carga (Volumen Atendido)
+            mod.cargaPct = 0;
+            if (totalGlobalTurnos > 0) {
+                mod.cargaPct = Math.round((mod.total / totalGlobalTurnos) * 100);
             }
         });
 
-        return { rows, summary };
+        return { rows, summary, totalGlobalTurnos };
     });
 }
 

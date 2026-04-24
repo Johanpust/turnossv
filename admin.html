@@ -175,6 +175,22 @@
                 <p style="font-size:0.75rem; color:var(--gray-400); margin-top:0.75rem; text-align:right;">
                     ⚡ El Excel detallado incluye cada turno individualmente con hora de inicio, fin y documento del paciente.
                 </p>
+                
+                <!-- === Dashboards Visuales === -->
+                <div id="report-charts" style="display:none; margin-top: 2rem; border-top: 1px solid var(--gray-200); padding-top: 1.5rem;">
+                    <h3 style="margin-bottom: 1rem; color: var(--gray-700);">📊 Gráficas de Productividad y Carga de Trabajo</h3>
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+                        <!-- Gráfico de Eficiencia -->
+                        <div style="background: white; padding: 1rem; border-radius: 8px; border: 1px solid var(--gray-200);">
+                            <canvas id="chart-efficiency"></canvas>
+                        </div>
+                        <!-- Gráfico de Volumen -->
+                        <div style="background: white; padding: 1rem; border-radius: 8px; border: 1px solid var(--gray-200);">
+                            <canvas id="chart-volume"></canvas>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -327,6 +343,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- SheetJS para generación de Excel sin backend -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <!-- Chart.js para gráficas visuales -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/supabase-client.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/storage.js"></script>

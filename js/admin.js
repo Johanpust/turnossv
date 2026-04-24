@@ -301,6 +301,9 @@ radioNotificationModes.forEach(radio => {
 // -----------------------------------------------------------------
 onStateChange((newState) => { renderFromState(newState); });
 
+let chartEfficiencyInstance = null;
+let chartVolumeInstance = null;
+
 // -----------------------------------------------------------------
 // loadReportPreview: Carga y muestra la tabla previa del reporte
 // para el rango de fechas seleccionado.
@@ -313,6 +316,7 @@ async function loadReportPreview() {
     const downloadBtn = document.getElementById('btn-download-excel');
     const noDataMsg = document.getElementById('report-no-data');
     const loadingMsg = document.getElementById('report-loading');
+    const chartsContainer = document.getElementById('report-charts');
 
     if (!startDateInput || !endDateInput) return;
 
@@ -344,10 +348,11 @@ async function loadReportPreview() {
     previewSection.style.display = 'block';
     loadingMsg.style.display = 'block';
     noDataMsg.style.display = 'none';
+    if(chartsContainer) chartsContainer.style.display = 'none';
     previewBody.innerHTML = '';
     downloadBtn.disabled = true;
 
-    const { rows, summary } = await fetchAttendanceSummaryByDateRange(startStr, endStr);
+    const { rows, summary, totalGlobalTurnos } = await fetchAttendanceSummaryByDateRange(startStr, endStr);
 
     loadingMsg.style.display = 'none';
 
@@ -362,7 +367,7 @@ async function loadReportPreview() {
         const s = summary[modId];
         return `
             <tr>
-                <td><strong>Módulo ${s.moduleId}</strong></td>
+                <td><strong>${modId === 7 ? 'Autogestión (7)' : 'Módulo ' + modId}</strong></td>
                 <td style="text-align:center;">${s.total}</td>
                 <td style="text-align:center;">
                     <span style="color:#3B82F6;font-weight:700;">E:${s.byType.E}</span>
@@ -386,8 +391,80 @@ async function loadReportPreview() {
         </tr>
     `;
 
+    // Renderizar Gráficas
+    if (chartsContainer && window.Chart) {
+        chartsContainer.style.display = 'block';
+        renderCharts(modIds, summary);
+    }
+
     downloadBtn.disabled = false;
     downloadBtn.onclick = () => downloadExcel(startStr, endStr);
+}
+
+// -----------------------------------------------------------------
+// renderCharts: Dibuja las gráficas de Productividad y Volumen
+// -----------------------------------------------------------------
+function renderCharts(modIds, summary) {
+    if (chartEfficiencyInstance) chartEfficiencyInstance.destroy();
+    if (chartVolumeInstance) chartVolumeInstance.destroy();
+
+    const labels = modIds.map(id => id === 7 ? 'Autogestión' : `Mód ${id}`);
+    
+    // Datos
+    const efficiencyData = modIds.map(id => summary[id].productividadPct || 0);
+    const volumeData = modIds.map(id => summary[id].cargaPct || 0);
+
+    // Colores dinámicos
+    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#64748B'];
+
+    // Gráfico de Eficiencia (Bar)
+    const ctxEff = document.getElementById('chart-efficiency').getContext('2d');
+    chartEfficiencyInstance = new Chart(ctxEff, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Eficiencia de Tiempo (%)',
+                data: efficiencyData,
+                backgroundColor: colors.slice(0, modIds.length).map(c => c + '80'),
+                borderColor: colors.slice(0, modIds.length),
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                title: { display: true, text: 'Eficiencia de Tiempo (%)', font: { size: 14 } }
+            },
+            scales: {
+                y: { beginAtZero: true, max: 100 }
+            }
+        }
+    });
+
+    // Gráfico de Volumen (Doughnut)
+    const ctxVol = document.getElementById('chart-volume').getContext('2d');
+    chartVolumeInstance = new Chart(ctxVol, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: volumeData,
+                backgroundColor: colors.slice(0, modIds.length),
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'right' },
+                title: { display: true, text: 'Carga de Trabajo (%)', font: { size: 14 } }
+            }
+        }
+    });
 }
 
 // -----------------------------------------------------------------

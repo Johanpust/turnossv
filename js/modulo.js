@@ -430,11 +430,14 @@ if (btnQuickTicket) {
             if (result && result.ticket) {
                 // Asignar automáticamente si hay un módulo libre
                 autoAssignToFreeModules(state);
+                
+                const waitMinutes = calculateEstimatedWaitTime(state);
+                
                 await setState(state);
                 
                 quickDocInput.value = '';
                 quickTicketMsg.style.display = 'block';
-                quickTicketMsg.textContent = `✅ Ficha ${result.ticket} generada`;
+                quickTicketMsg.textContent = `✅ Ficha ${result.ticket} generada (Espera: ~${waitMinutes}m)`;
                 
                 // Ocultar mensaje después de 4 segundos
                 setTimeout(() => {

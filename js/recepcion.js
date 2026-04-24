@@ -110,13 +110,13 @@ async function refreshNextTicketPreview() {
     }
 }
 
-function showConfirmation(ticket, type, priority) {
+function showConfirmation(ticket, type, priority, waitMinutes) {
     const typeStyle  = TYPE_STYLES[type] || {};
     const prioLabel  = priority === 'high' ? '🔴 Alta Prioridad' : '🔵 Normal';
     const typeLabel  = `${typeStyle.emoji || ''} ${typeStyle.label || type}`;
 
     confirmTicketEl.textContent = `Turno ${ticket}`;
-    confirmDetailEl.textContent = `${typeLabel} — ${prioLabel}`;
+    confirmDetailEl.innerHTML = `${typeLabel} — ${prioLabel}<br><span style="color:var(--amber-500); font-size:0.9rem;">⏱️ Tiempo estimado: ~${waitMinutes} min</span>`;
     confirmationBox.classList.add('visible');
 
     clearTimeout(confirmationTimer);
@@ -141,9 +141,12 @@ async function generateTicket(priority) {
 
     const ticket = addTicket(state, docId, priority, type);
     autoAssignToFreeModules(state);
+    
+    const waitMinutes = calculateEstimatedWaitTime(state);
+    
     await setState(state);
 
-    showConfirmation(ticket.ticket, type, priority);
+    showConfirmation(ticket.ticket, type, priority, waitMinutes);
     docInput.value = '';
     docInput.focus();
     updateButtonState();
