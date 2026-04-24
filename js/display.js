@@ -315,3 +315,73 @@ refreshDisplay();
 
 // Intentar un desbloqueo automático poco después de la inicialización
 setTimeout(attemptAutoUnlockAudio, 50);
+
+// -----------------------------------------------------------------
+// checkSchedules: Ejecutado cada 20 segundos para automatizar la activación/desactivación de módulos
+// -----------------------------------------------------------------
+async function checkSchedules() {
+    const state = await getState();
+    if (!state.schedules) return;
+
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const currentTime = `${hh}:${mm}`;
+
+    let stateModified = false;
+    
+    // Check if we already triggered for this exact minute
+    const dateStr = now.toDateString();
+    if (state.lastScheduleTrigger && state.lastScheduleTrigger.date === dateStr && state.lastScheduleTrigger.time === currentTime) {
+        return; // Already processed this minute
+    }
+
+    for (let i = 1; i <= 7; i++) {
+        const sched = state.schedules[i];
+        const mod = state.modules[i];
+        if (!sched || !sched.enabled || !mod) continue;
+
+        for (const shift of sched.shifts) {
+            // Activar si es la hora de inicio exacta
+            if (shift.start === currentTime) {
+                mod.active = true;
+                mod.paused = false;
+                mod.allowedTypes = shift.types && shift.types.length > 0 ? shift.types : ['E', 'A', 'V', 'B'];
+                stateModified = true;
+                console.log(`⏱️ Módulo ${i} activado automáticamente (Turno: ${shift.start} - ${shift.end})`);
+            }
+            // Desactivar si es la hora de fin exacta
+            else if (shift.end === currentTime) {
+                mod.active = false;
+                mod.paused = false;
+                // Devolver turno actual a la cola si tiene
+                if (mod.currentTicket) {
+                    state.queue.unshift({
+                        ticket:    mod.currentTicket,
+                        type:      mod.currentTicketType || 'E',
+                        docId:     mod.currentDocId,
+                        priority:  'normal',
+                        timestamp: Date.now()
+                    });
+                    mod.currentTicket     = null;
+                    mod.currentTicketType = null;
+                    mod.currentDocId      = null;
+                    mod.calledAt          = null;
+                }
+                stateModified = true;
+                console.log(`⏱️ Módulo ${i} desactivado automáticamente (Fin de turno: ${shift.end})`);
+            }
+        }
+    }
+
+    if (stateModified) {
+        state.lastScheduleTrigger = { date: dateStr, time: currentTime };
+        if (typeof autoAssignToFreeModules === 'function') {
+            autoAssignToFreeModules(state);
+        }
+        await setState(state);
+    }
+}
+
+setInterval(checkSchedules, 20000);
+checkSchedules();

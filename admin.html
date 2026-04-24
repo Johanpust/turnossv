@@ -84,6 +84,7 @@
         <div class="section-header">
             <h2>Estado de Módulos</h2>
             <div style="display:flex;gap:0.75rem; flex-wrap:wrap;">
+                <button class="btn btn-secondary btn-sm" id="btn-schedules" style="background:#4B5563; border-color:#4B5563;">⏱️ Horarios</button>
                 <button class="btn btn-success btn-sm" id="btn-activate-all">✅ Activar Todos</button>
                 <button class="btn btn-danger btn-sm" id="btn-deactivate-all">❌ Desactivar Todos</button>
             </div>
@@ -231,6 +232,88 @@
             <div class="modal-actions">
                 <button class="btn btn-secondary" id="btn-cancel-delete">Cancelar</button>
                 <button class="btn" id="btn-confirm-delete" style="background:#EF4444; color:white; border:none;">Sí, eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- === Modal de Horarios === -->
+    <div class="modal-overlay" id="modal-schedules" style="display: none;">
+        <div class="modal-box" style="max-width: 600px; width: 90%;">
+            <div class="modal-icon" style="background:#F3F4F6; color:#374151;">⏱️</div>
+            <div class="modal-title">Configurar Horarios Automáticos</div>
+            <div class="modal-message" style="text-align: left; font-size: 0.9rem;">
+                Activa la automatización y define hasta 2 turnos por módulo. El sistema activará el módulo y configurará sus tipos permitidos en la <b>Hora Inicio</b>, y lo desactivará en la <b>Hora Fin</b>.
+                <br><br>
+                <div style="margin-bottom: 1rem;">
+                    <label style="font-weight: bold;">Seleccionar Módulo:</label>
+                    <select id="schedule-module-select" class="input-field" style="width: 100%; margin-top: 0.5rem; padding: 0.5rem; border-radius:6px; border:1px solid #D1D5DB;">
+                        <option value="1">Módulo 1</option>
+                        <option value="2">Módulo 2</option>
+                        <option value="3">Módulo 3</option>
+                        <option value="4">Módulo 4</option>
+                        <option value="5">Módulo 5</option>
+                        <option value="6">Módulo 6</option>
+                        <option value="7">Autogestión (7)</option>
+                    </select>
+                </div>
+
+                <div style="background: var(--gray-50); padding: 1rem; border-radius: 8px; border:1px solid #E5E7EB;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600; margin-bottom: 1rem;">
+                        <input type="checkbox" id="schedule-enabled" style="width: 18px; height: 18px;">
+                        Activar automatización de horarios
+                    </label>
+
+                    <div id="schedule-shifts" style="display: flex; flex-direction: column; gap: 1rem;">
+                        <!-- Shift 1 -->
+                        <div style="border-left: 3px solid #3B82F6; padding-left: 1rem;">
+                            <strong>Turno 1</strong>
+                            <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                                <div style="flex: 1;">
+                                    <label style="font-size:0.8rem;">Hora Inicio</label>
+                                    <input type="time" id="sh1-start" class="input-field" style="width: 100%; padding: 0.4rem; border-radius:4px; border:1px solid #ccc;">
+                                </div>
+                                <div style="flex: 1;">
+                                    <label style="font-size:0.8rem;">Hora Fin</label>
+                                    <input type="time" id="sh1-end" class="input-field" style="width: 100%; padding: 0.4rem; border-radius:4px; border:1px solid #ccc;">
+                                </div>
+                            </div>
+                            <div style="margin-top: 0.5rem; font-size:0.85rem;">
+                                <label style="font-weight:600; margin-right:0.5rem;">Tipos: </label>
+                                <label style="margin-right:0.5rem;"><input type="checkbox" class="sh1-type" value="E"> E</label>
+                                <label style="margin-right:0.5rem;"><input type="checkbox" class="sh1-type" value="A"> A</label>
+                                <label style="margin-right:0.5rem;"><input type="checkbox" class="sh1-type" value="V"> V</label>
+                                <label style="margin-right:0.5rem;"><input type="checkbox" class="sh1-type" value="B"> B</label>
+                            </div>
+                        </div>
+
+                        <!-- Shift 2 -->
+                        <div style="border-left: 3px solid #9CA3AF; padding-left: 1rem;">
+                            <strong>Turno 2 (Opcional)</strong>
+                            <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                                <div style="flex: 1;">
+                                    <label style="font-size:0.8rem;">Hora Inicio</label>
+                                    <input type="time" id="sh2-start" class="input-field" style="width: 100%; padding: 0.4rem; border-radius:4px; border:1px solid #ccc;">
+                                </div>
+                                <div style="flex: 1;">
+                                    <label style="font-size:0.8rem;">Hora Fin</label>
+                                    <input type="time" id="sh2-end" class="input-field" style="width: 100%; padding: 0.4rem; border-radius:4px; border:1px solid #ccc;">
+                                </div>
+                            </div>
+                            <div style="margin-top: 0.5rem; font-size:0.85rem;">
+                                <label style="font-weight:600; margin-right:0.5rem;">Tipos: </label>
+                                <label style="margin-right:0.5rem;"><input type="checkbox" class="sh2-type" value="E"> E</label>
+                                <label style="margin-right:0.5rem;"><input type="checkbox" class="sh2-type" value="A"> A</label>
+                                <label style="margin-right:0.5rem;"><input type="checkbox" class="sh2-type" value="V"> V</label>
+                                <label style="margin-right:0.5rem;"><input type="checkbox" class="sh2-type" value="B"> B</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-actions" style="margin-top: 1rem; display:flex; justify-content:flex-end; gap:0.5rem;">
+                <button class="btn btn-secondary" id="btn-close-schedules">Cerrar</button>
+                <button class="btn" id="btn-save-schedule" style="background:#3B82F6; color:white; border:none;">Guardar Horario</button>
             </div>
         </div>
     </div>

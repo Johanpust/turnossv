@@ -462,5 +462,92 @@ async function loadReportPreview() {
 
     // Cargar preview automáticamente para hoy
     loadReportPreview();
-})();
 
+    // Configurar Horarios Automáticos
+    const btnSchedules = document.getElementById('btn-schedules');
+    const modalSchedules = document.getElementById('modal-schedules');
+    const btnCloseSchedules = document.getElementById('btn-close-schedules');
+    const btnSaveSchedule = document.getElementById('btn-save-schedule');
+    const scheduleModuleSelect = document.getElementById('schedule-module-select');
+    const scheduleEnabled = document.getElementById('schedule-enabled');
+    
+    async function loadScheduleForm(moduleId) {
+        const state = await getState();
+        const sched = state.schedules && state.schedules[moduleId] ? state.schedules[moduleId] : { enabled: false, shifts: [] };
+        
+        scheduleEnabled.checked = sched.enabled;
+        
+        // Reset form
+        document.getElementById('sh1-start').value = '';
+        document.getElementById('sh1-end').value = '';
+        document.querySelectorAll('.sh1-type').forEach(cb => cb.checked = false);
+        
+        document.getElementById('sh2-start').value = '';
+        document.getElementById('sh2-end').value = '';
+        document.querySelectorAll('.sh2-type').forEach(cb => cb.checked = false);
+
+        if (sched.shifts.length > 0) {
+            document.getElementById('sh1-start').value = sched.shifts[0].start || '';
+            document.getElementById('sh1-end').value = sched.shifts[0].end || '';
+            const types1 = sched.shifts[0].types || [];
+            document.querySelectorAll('.sh1-type').forEach(cb => {
+                if (types1.includes(cb.value)) cb.checked = true;
+            });
+        }
+        
+        if (sched.shifts.length > 1) {
+            document.getElementById('sh2-start').value = sched.shifts[1].start || '';
+            document.getElementById('sh2-end').value = sched.shifts[1].end || '';
+            const types2 = sched.shifts[1].types || [];
+            document.querySelectorAll('.sh2-type').forEach(cb => {
+                if (types2.includes(cb.value)) cb.checked = true;
+            });
+        }
+    }
+
+    if (btnSchedules && modalSchedules) {
+        btnSchedules.addEventListener('click', () => {
+            modalSchedules.style.display = 'flex';
+            loadScheduleForm(scheduleModuleSelect.value);
+        });
+
+        btnCloseSchedules.addEventListener('click', () => {
+            modalSchedules.style.display = 'none';
+        });
+
+        scheduleModuleSelect.addEventListener('change', (e) => {
+            loadScheduleForm(e.target.value);
+        });
+
+        btnSaveSchedule.addEventListener('click', async () => {
+            const moduleId = scheduleModuleSelect.value;
+            const state = await getState();
+            if (!state.schedules) state.schedules = {};
+            
+            const shifts = [];
+            
+            const sh1Start = document.getElementById('sh1-start').value;
+            const sh1End = document.getElementById('sh1-end').value;
+            const sh1Types = Array.from(document.querySelectorAll('.sh1-type:checked')).map(cb => cb.value);
+            if (sh1Start || sh1End) {
+                shifts.push({ start: sh1Start, end: sh1End, types: sh1Types });
+            }
+
+            const sh2Start = document.getElementById('sh2-start').value;
+            const sh2End = document.getElementById('sh2-end').value;
+            const sh2Types = Array.from(document.querySelectorAll('.sh2-type:checked')).map(cb => cb.value);
+            if (sh2Start || sh2End) {
+                shifts.push({ start: sh2Start, end: sh2End, types: sh2Types });
+            }
+
+            state.schedules[moduleId] = {
+                enabled: scheduleEnabled.checked,
+                shifts: shifts
+            };
+
+            await setState(state);
+            alert(`Horario del ${moduleId === '7' ? 'Módulo Autogestión' : 'Módulo ' + moduleId} guardado correctamente.`);
+        });
+    }
+
+})();

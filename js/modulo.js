@@ -392,3 +392,58 @@ btnToggleAttended.addEventListener('click', () => {
     const state = await getState();
     updateUI(state);
 })();
+
+// -----------------------------------------------------------------
+// Mini-Recepción (Generar Ficha Rápida)
+// -----------------------------------------------------------------
+const btnQuickTicket = document.getElementById('btn-quick-ticket');
+const quickTypeSelect = document.getElementById('quick-type');
+const quickDocInput = document.getElementById('quick-doc-id');
+const quickTicketMsg = document.getElementById('quick-ticket-msg');
+
+if (btnQuickTicket) {
+    btnQuickTicket.addEventListener('click', async () => {
+        const type = quickTypeSelect.value;
+        const docId = quickDocInput.value.trim();
+
+        if (!docId) {
+            alert('Por favor, ingresa el documento del paciente.');
+            return;
+        }
+        if (!/^\d+$/.test(docId)) {
+            alert('El documento debe contener solo números.');
+            return;
+        }
+
+        btnQuickTicket.disabled = true;
+        
+        try {
+            const state = await getState();
+            
+            // Re-usamos la lógica de tickets.js
+            const result = addTicket(state, type, docId, false); // isHigh = false por defecto
+            
+            if (result.success) {
+                // Asignar automáticamente si hay un módulo libre
+                autoAssignToFreeModules(state);
+                await setState(state);
+                
+                quickDocInput.value = '';
+                quickTicketMsg.style.display = 'block';
+                quickTicketMsg.textContent = `✅ Ficha ${result.ticket} generada`;
+                
+                // Ocultar mensaje después de 4 segundos
+                setTimeout(() => {
+                    quickTicketMsg.style.display = 'none';
+                }, 4000);
+            } else {
+                alert(result.message || 'Error al generar el turno.');
+            }
+        } catch (error) {
+            console.error("Error al generar ficha rápida:", error);
+            alert("Error al conectar con la base de datos.");
+        } finally {
+            btnQuickTicket.disabled = false;
+        }
+    });
+}

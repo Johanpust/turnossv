@@ -51,6 +51,16 @@ const DEFAULT_STATE = {
     settings: {
         notificationMode: 'voice'
     },
+    schedules: {
+        1: { enabled: false, shifts: [] },
+        2: { enabled: false, shifts: [] },
+        3: { enabled: false, shifts: [] },
+        4: { enabled: false, shifts: [] },
+        5: { enabled: false, shifts: [] },
+        6: { enabled: false, shifts: [] },
+        7: { enabled: false, shifts: [] }
+    },
+    lastScheduleTrigger: {},
     lastResetDate: _getLocalDateStr(),  // Fecha local, no UTC
     lastUpdated: 0,
 };
@@ -95,6 +105,18 @@ function _sanitizeState(parsed) {
             parsed.ticketCounter[t] = 1;
         }
     });
+
+    if (!parsed.schedules) {
+        parsed.schedules = {};
+    }
+    for (let i = 1; i <= 7; i++) {
+        if (!parsed.schedules[i]) {
+            parsed.schedules[i] = { enabled: false, shifts: [] };
+        }
+    }
+    if (!parsed.lastScheduleTrigger) {
+        parsed.lastScheduleTrigger = {};
+    }
 
     if (!parsed.lastResetDate) {
         parsed.lastResetDate = _getLocalDateStr();

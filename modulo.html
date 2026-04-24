@@ -123,6 +123,25 @@
                 </div>
             </div>
 
+            <!-- Mini-Recepción (Generar turno rápido) -->
+            <div class="detail-card animate-in" style="margin-top: 1.5rem; background-color: var(--primary-50); border: 1px solid var(--primary-200); box-shadow: none;">
+                <div class="detail-header" style="flex-direction: column; align-items: flex-start; gap: 0.5rem; border-bottom: 1px solid var(--primary-200); padding-bottom: 0.75rem; margin-bottom: 0.75rem;">
+                    <span class="detail-title" style="color: var(--primary-700);">🎟️ Generar Ficha (Paso Directo)</span>
+                    <span style="font-size: 0.75rem; color: var(--primary-600);">Emite un turno de "Entrega de órdenes" o "Varios" y lo asigna a la cola.</span>
+                </div>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                    <select id="quick-type" class="input-field" style="padding: 0.5rem; font-size: 0.85rem; width: 100px;">
+                        <option value="E">Órdenes (E)</option>
+                        <option value="A">Citas (A)</option>
+                        <option value="V">Varios (V)</option>
+                        <option value="B">Biopsias (B)</option>
+                    </select>
+                    <input type="number" id="quick-doc-id" class="input-field" placeholder="Documento" style="flex: 1; font-size: 0.85rem; padding: 0.5rem;">
+                    <button class="btn" id="btn-quick-ticket" style="background-color: var(--primary-600); color: white; font-size: 0.85rem; padding: 0.5rem 1rem; border: none; border-radius: 6px;">Generar</button>
+                </div>
+                <div id="quick-ticket-msg" style="display:none; font-size:0.85rem; font-weight:700; color:#10B981; text-align:center; padding: 0.5rem; background: #D1FAE5; border-radius: 4px;"></div>
+            </div>
+
             <!-- Timer de servicio y log de llamados -->
             <div class="service-details animate-in" id="service-details" style="display:none; margin-top: 1.5rem;">
                 <div class="detail-card">
