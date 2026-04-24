@@ -213,7 +213,7 @@ function renderQueuePreview(state) {
 function renderModulesStatus(state) {
     modulesStatusList.innerHTML = '';
 
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= 7; i++) {
         const mod = state.modules[i];
         if (!mod) continue;
 
@@ -248,7 +248,7 @@ function renderModulesStatus(state) {
         item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:0.35rem 0; border-bottom:1px solid var(--gray-100);';
         item.innerHTML = `
             <div>
-                <span style="font-size:0.875rem; font-weight:600; color:var(--gray-700)">Módulo ${i}</span>
+                <span style="font-size:0.875rem; font-weight:600; color:var(--gray-700)">${i === 7 ? 'Autogestión' : 'Módulo ' + i}</span>
                 <span style="font-size:0.65rem; color:var(--gray-400); margin-left:0.4rem;">[${allowedStr}]</span>
             </div>
             <span class="badge ${statusClass}" style="font-size:0.65rem;">${statusText}</span>

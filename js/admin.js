@@ -39,7 +39,7 @@ const radioNotificationModes = document.getElementsByName('notification-mode');
 function renderModulesGrid(state) {
     modulesGrid.innerHTML = '';
 
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= 7; i++) {
         const mod = state.modules[i];
         if (!mod) continue;
 
@@ -84,7 +84,7 @@ function renderModulesGrid(state) {
         card.style.animationDelay = `${(i - 1) * 0.08}s`;
         card.innerHTML = `
             <div class="module-card-header">
-                <span class="module-number">Módulo ${i}</span>
+                <span class="module-number">${i === 7 ? 'Autogestión' : 'Módulo ' + i}</span>
                 ${badgeHtml}
             </div>
             <div class="module-card-body">
@@ -123,10 +123,10 @@ function updateStats(state) {
     statHighQueue.textContent  = state.highQueue.length;
 
     let activeCount = 0;
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= 7; i++) {
         if (state.modules[i] && state.modules[i].active) activeCount++;
     }
-    statActiveModules.textContent = `${activeCount}/6`;
+    statActiveModules.textContent = `${activeCount}/7`;
 
     const counts = getQueueCountByType(state);
     const typeSummary = Object.entries(counts)
@@ -224,7 +224,7 @@ async function toggleModuleType(moduleId, type, enabled) {
 // -----------------------------------------------------------------
 btnActivateAll.addEventListener('click', async () => {
     const state = await getState();
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= 7; i++) {
         if (state.modules[i]) state.modules[i].active = true;
     }
     autoAssignToFreeModules(state);
@@ -237,7 +237,7 @@ btnActivateAll.addEventListener('click', async () => {
 // -----------------------------------------------------------------
 btnDeactivateAll.addEventListener('click', async () => {
     const state = await getState();
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= 7; i++) {
         const mod = state.modules[i];
         if (!mod) continue;
         if (mod.currentTicket) {

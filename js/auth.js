@@ -65,6 +65,13 @@ const USERS = {
         moduleId: 6,
         redirect: 'modulo.html?mod=6',
         displayName: 'Módulo 6'
+    },
+    modulo7: {
+        password: 'mod7pass',
+        role: 'modulo',
+        moduleId: 7,
+        redirect: 'modulo.html?mod=7',
+        displayName: 'Autogestión'
     }
 };
 

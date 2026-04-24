@@ -19,7 +19,7 @@ const displayDateEl      = document.getElementById('display-date');
 const audioOverlay       = document.getElementById('audio-overlay');
 
 let lastCalledAtMap = {};
-for (let i = 1; i <= 6; i++) lastCalledAtMap[i] = 0;
+for (let i = 1; i <= 7; i++) lastCalledAtMap[i] = 0;
 
 // Contexto de audio compartido (se crea al primer click del usuario)
 let sharedAudioCtx = null;
@@ -124,7 +124,7 @@ function getTypeStyle(type) {
 function renderModules(state) {
     modulesDisplayGrid.innerHTML = '';
 
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= 7; i++) {
         const mod = state.modules[i];
         if (!mod) continue;
 
@@ -135,10 +135,10 @@ function renderModules(state) {
         let hasActiveTicketDisplay = false;
 
         if (!mod.active) {
-            cardClass   = 'is-inactive';
-            statusLabel = 'DESACTIVADO';
-            statusClass = 'status-inactive';
-        } else if (mod.paused) {
+            continue; // Ocultar del display si está desactivado por el administrador
+        }
+        
+        if (mod.paused) {
             cardClass   = 'is-paused';
             statusLabel = 'EN PAUSA';
             statusClass = 'status-paused';
@@ -183,7 +183,7 @@ function renderModules(state) {
         card.id = `display-mod-${i}`;
         card.innerHTML = `
             <div class="module-display-header">
-                <div class="module-display-num">MÓDULO ${i}</div>
+                <div class="module-display-num">${i === 7 ? 'AUTOGESTIÓN' : 'MÓDULO ' + i}</div>
                 <span class="module-display-status ${statusClass}">${statusLabel}</span>
             </div>
             <div class="module-display-ticket">
@@ -202,7 +202,7 @@ function renderModules(state) {
 function checkForNewCalls(state) {
     const notificationMode = (state.settings && state.settings.notificationMode) || 'sound';
 
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= 7; i++) {
         const mod      = state.modules[i];
         if (!mod) continue;
         const calledAt = mod.calledAt || 0;
@@ -286,7 +286,7 @@ function renderWaitingQueue(state) {
 function refreshDisplay() {
     getState().then((state) => {
         // Sincronizar mapa inicial para no disparar sonido al cargar
-        for (let i = 1; i <= 6; i++) {
+        for (let i = 1; i <= 7; i++) {
             if (state.modules[i]) {
                 lastCalledAtMap[i] = state.modules[i].calledAt || 0;
             }

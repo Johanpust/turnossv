@@ -165,7 +165,7 @@ function assignTicketToModule(state, moduleId) {
 // automáticamente a los que estén disponibles (respetando tipos).
 // -----------------------------------------------------------------
 function autoAssignToFreeModules(state) {
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= 7; i++) {
         const mod = state.modules[i];
         if (getTotalInQueue(state) === 0) break;
         if (mod.active && !mod.paused && mod.currentTicket === null) {

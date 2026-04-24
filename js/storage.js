@@ -43,7 +43,8 @@ const DEFAULT_STATE = {
         3: defaultModule(),
         4: defaultModule(),
         5: defaultModule(),
-        6: defaultModule()
+        6: defaultModule(),
+        7: defaultModule()
     },
     ticketCounter: { E: 1, A: 1, V: 1, B: 1 },
     callHistory: [],
@@ -70,7 +71,7 @@ function _getLocalDateStr(d) {
 function _sanitizeState(parsed) {
     if (!parsed) return JSON.parse(JSON.stringify(DEFAULT_STATE));
 
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= 7; i++) {
         if (!parsed.modules[i]) {
             parsed.modules[i] = defaultModule();
         } else {
@@ -154,7 +155,7 @@ function resetState() {
     return getState().then(current => {
         const fresh = JSON.parse(JSON.stringify(DEFAULT_STATE));
 
-        for (let i = 1; i <= 6; i++) {
+        for (let i = 1; i <= 7; i++) {
             if (current.modules[i]) {
                 fresh.modules[i].active       = current.modules[i].active;
                 fresh.modules[i].allowedTypes = current.modules[i].allowedTypes || ['E', 'A', 'V', 'B'];
@@ -224,7 +225,7 @@ async function checkAndAutoReset() {
     const fresh = JSON.parse(JSON.stringify(DEFAULT_STATE));
 
     // Conservar configuración de módulos (tipos permitidos, activo)
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= 7; i++) {
         if (state.modules[i]) {
             fresh.modules[i].active       = state.modules[i].active;
             fresh.modules[i].allowedTypes = state.modules[i].allowedTypes || ['E', 'A', 'V', 'B'];

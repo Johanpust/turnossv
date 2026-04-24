@@ -54,9 +54,15 @@ const finishedTicketsLog  = document.getElementById('finished-tickets-log');
 let timerInterval = null;
 let currentSearchQuery = '';
 
-moduloNumIcon.textContent = moduleId;
-moduloNumText.textContent = moduleId;
-document.title = `Módulo ${moduleId} — Sistema de Turnos`;
+if (moduleId === 7) {
+    moduloNumIcon.textContent = 'A';
+    document.querySelector('.modulo-title span').textContent = 'Autogestión';
+    document.title = `Autogestión — Sistema de Turnos`;
+} else {
+    moduloNumIcon.textContent = moduleId;
+    moduloNumText.textContent = moduleId;
+    document.title = `Módulo ${moduleId} — Sistema de Turnos`;
+}
 
 // -----------------------------------------------------------------
 // updateUI: Actualiza la interfaz con el estado del módulo.
