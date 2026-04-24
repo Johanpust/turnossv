@@ -136,23 +136,35 @@ async function downloadExcel(startDateStr, endDateStr) {
 
     // Preparar los datos en formato de filas para el Excel
     const excelData = rows.map((row, idx) => {
-        const horaInicio   = row.attending_at || row.assigned_at;
-        const horaFin      = row.finished_at;
-        const tiempoMin    = row.attention_seconds && row.attention_seconds > 0
-            ? parseFloat((row.attention_seconds / 60).toFixed(2))
-            : null;
+        const asig = row.assigned_at ? new Date(row.assigned_at).getTime() : 0;
+        const aten = row.attending_at ? new Date(row.attending_at).getTime() : 0;
+        const fin  = row.finished_at ? new Date(row.finished_at).getTime() : 0;
+
+        let demoraSegundos = 0;
+        if (asig && aten) {
+            demoraSegundos = Math.floor((aten - asig) / 1000);
+        }
+
+        let atencionSegundos = row.attention_seconds || 0;
+        if (aten && fin && atencionSegundos === 0) {
+            atencionSegundos = Math.floor((fin - aten) / 1000);
+        }
+
+        const demoraMin = demoraSegundos > 0 ? parseFloat((demoraSegundos / 60).toFixed(2)) : null;
+        const atencionMin = atencionSegundos > 0 ? parseFloat((atencionSegundos / 60).toFixed(2)) : null;
 
         return {
             '#':                    idx + 1,
             'Fecha':                row.date,
-            'Módulo':               `Módulo ${row.module_id}`,
+            'Módulo':               row.module_id === 7 ? 'Autogestión (7)' : `Módulo ${row.module_id}`,
             'Tipo de Turno':        row.ticket_type,
-            'Descripción Tipo':     REPORT_TYPE_LABELS[row.ticket_type] || row.ticket_type,
             'Código Turno':         row.ticket,
             'Documento Paciente':   row.doc_id || '—',
-            'Hora Inicio Atención': horaInicio ? formatTime(horaInicio) : '—',
-            'Hora Fin Atención':    horaFin    ? formatTime(horaFin)    : '—',
-            'Tiempo Atención (min)': tiempoMin !== null ? tiempoMin : '—'
+            'Hora Asignado':        row.assigned_at ? formatTime(row.assigned_at) : '—',
+            'Hora Atendiendo':      row.attending_at ? formatTime(row.attending_at) : '—',
+            'Hora Fin':             row.finished_at ? formatTime(row.finished_at) : '—',
+            'Demora Previa (min)':  demoraMin !== null ? demoraMin : '—',
+            'Tiempo Atención (min)': atencionMin !== null ? atencionMin : '—'
         };
     });
 
@@ -164,14 +176,15 @@ async function downloadExcel(startDateStr, endDateStr) {
     ws['!cols'] = [
         { wch: 4  },  // #
         { wch: 12 },  // Fecha
-        { wch: 12 },  // Módulo
+        { wch: 18 },  // Módulo
         { wch: 12 },  // Tipo
-        { wch: 22 },  // Descripción
         { wch: 14 },  // Código
         { wch: 20 },  // Documento
-        { wch: 20 },  // Hora Inicio
-        { wch: 20 },  // Hora Fin
-        { wch: 22 }   // Tiempo (min)
+        { wch: 18 },  // Hora Asignado
+        { wch: 18 },  // Hora Atendiendo
+        { wch: 18 },  // Hora Fin
+        { wch: 20 },  // Demora (min)
+        { wch: 22 }   // Tiempo Atención (min)
     ];
 
     XLSX.utils.book_append_sheet(wb, ws, `Atenciones`);
@@ -179,33 +192,61 @@ async function downloadExcel(startDateStr, endDateStr) {
     // Segunda hoja: Resumen por módulo
     const resumenData = [];
     const modIds = [...new Set(rows.map(r => r.module_id))].sort((a, b) => a - b);
+    
     modIds.forEach(modId => {
         const modRows = rows.filter(r => r.module_id === modId);
         const byType  = { E: 0, A: 0, V: 0, B: 0 };
-        let totalSecs = 0;
+        let totalDemoraSecs = 0;
+        let totalAtencionSecs = 0;
+
         modRows.forEach(r => {
             if (byType[r.ticket_type] !== undefined) byType[r.ticket_type]++;
-            if (r.attention_seconds > 0) totalSecs += r.attention_seconds;
+            
+            const asig = r.assigned_at ? new Date(r.assigned_at).getTime() : 0;
+            const aten = r.attending_at ? new Date(r.attending_at).getTime() : 0;
+            const fin  = r.finished_at ? new Date(r.finished_at).getTime() : 0;
+
+            if (asig && aten) {
+                totalDemoraSecs += Math.floor((aten - asig) / 1000);
+            }
+            if (aten && fin) {
+                totalAtencionSecs += Math.floor((fin - aten) / 1000);
+            } else if (r.attention_seconds > 0) {
+                totalAtencionSecs += r.attention_seconds;
+            }
         });
-        const avgMin = modRows.length > 0 && totalSecs > 0
-            ? parseFloat((totalSecs / 60 / modRows.length).toFixed(2)) : '—';
+
+        const totalOperativoSecs = totalDemoraSecs + totalAtencionSecs;
+        let productividadPct = 0;
+        if (totalOperativoSecs > 0) {
+            // Productividad = Tiempo Atendiendo / (Tiempo Demora + Tiempo Atendiendo)
+            productividadPct = Math.round((totalAtencionSecs / totalOperativoSecs) * 100);
+        }
+
+        const avgDemoraMin = modRows.length > 0 && totalDemoraSecs > 0
+            ? parseFloat((totalDemoraSecs / 60 / modRows.length).toFixed(2)) : 0;
+            
+        const avgAtencionMin = modRows.length > 0 && totalAtencionSecs > 0
+            ? parseFloat((totalAtencionSecs / 60 / modRows.length).toFixed(2)) : 0;
 
         resumenData.push({
-            'Módulo':                      `Módulo ${modId}`,
-            'Total Turnos Atendidos':      modRows.length,
-            'E - Entrega órdenes':         byType.E,
-            'A - Activación citas':        byType.A,
-            'V - Varios':                  byType.V,
-            'B - Entrega biopsias':        byType.B,
-            'Tiempo Promedio Atención (min)': avgMin
+            'Módulo':                      modId === 7 ? 'Autogestión (7)' : `Módulo ${modId}`,
+            'Total Turnos':                modRows.length,
+            'E':                           byType.E,
+            'A':                           byType.A,
+            'V':                           byType.V,
+            'B':                           byType.B,
+            'Promedio Demora (min)':       avgDemoraMin > 0 ? avgDemoraMin : '—',
+            'Promedio Atención (min)':     avgAtencionMin > 0 ? avgAtencionMin : '—',
+            'Productividad (%)':           `${productividadPct}%`
         });
     });
 
     const wsResumen = XLSX.utils.json_to_sheet(resumenData);
     wsResumen['!cols'] = [
-        { wch: 14 }, { wch: 24 }, { wch: 20 }, { wch: 22 }, { wch: 12 }, { wch: 22 }, { wch: 32 }
+        { wch: 18 }, { wch: 16 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 22 }, { wch: 24 }, { wch: 18 }
     ];
-    XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen por Módulo');
+    XLSX.utils.book_append_sheet(wb, wsResumen, 'Productividad por Módulo');
 
     // Descargar
     const dateLabel = (startDateStr === endDateStr) ? startDateStr : `${startDateStr}_a_${endDateStr}`;
