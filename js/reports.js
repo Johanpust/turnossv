@@ -193,6 +193,9 @@ async function downloadExcel(startDateStr, endDateStr) {
     const resumenData = [];
     const modIds = [...new Set(rows.map(r => r.module_id))].sort((a, b) => a - b);
     
+    // Calcular el total de turnos de todos los módulos para el porcentaje de carga
+    const totalGlobalTurnos = rows.length;
+
     modIds.forEach(modId => {
         const modRows = rows.filter(r => r.module_id === modId);
         const byType  = { E: 0, A: 0, V: 0, B: 0 };
@@ -219,8 +222,13 @@ async function downloadExcel(startDateStr, endDateStr) {
         const totalOperativoSecs = totalDemoraSecs + totalAtencionSecs;
         let productividadPct = 0;
         if (totalOperativoSecs > 0) {
-            // Productividad = Tiempo Atendiendo / (Tiempo Demora + Tiempo Atendiendo)
+            // Eficiencia de Tiempo = Tiempo Atendiendo / (Tiempo Demora + Tiempo Atendiendo)
             productividadPct = Math.round((totalAtencionSecs / totalOperativoSecs) * 100);
+        }
+
+        let cargaPct = 0;
+        if (totalGlobalTurnos > 0) {
+            cargaPct = Math.round((modRows.length / totalGlobalTurnos) * 100);
         }
 
         const avgDemoraMin = modRows.length > 0 && totalDemoraSecs > 0
@@ -232,19 +240,20 @@ async function downloadExcel(startDateStr, endDateStr) {
         resumenData.push({
             'Módulo':                      modId === 7 ? 'Autogestión (7)' : `Módulo ${modId}`,
             'Total Turnos':                modRows.length,
+            'Volumen Atendido (%)':        `${cargaPct}%`,
             'E':                           byType.E,
             'A':                           byType.A,
             'V':                           byType.V,
             'B':                           byType.B,
             'Promedio Demora (min)':       avgDemoraMin > 0 ? avgDemoraMin : '—',
             'Promedio Atención (min)':     avgAtencionMin > 0 ? avgAtencionMin : '—',
-            'Productividad (%)':           `${productividadPct}%`
+            'Eficiencia de Tiempo (%)':    `${productividadPct}%`
         });
     });
 
     const wsResumen = XLSX.utils.json_to_sheet(resumenData);
     wsResumen['!cols'] = [
-        { wch: 18 }, { wch: 16 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 22 }, { wch: 24 }, { wch: 18 }
+        { wch: 18 }, { wch: 16 }, { wch: 22 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 22 }, { wch: 24 }, { wch: 24 }
     ];
     XLSX.utils.book_append_sheet(wb, wsResumen, 'Productividad por Módulo');
 
