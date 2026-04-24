@@ -410,6 +410,10 @@ if (btnQuickTicket) {
             alert('Por favor, ingresa el documento del paciente.');
             return;
         }
+        if (docId.length < 4) {
+            alert('El documento debe tener al menos 4 números.');
+            return;
+        }
         if (!/^\d+$/.test(docId)) {
             alert('El documento debe contener solo números.');
             return;
@@ -421,9 +425,9 @@ if (btnQuickTicket) {
             const state = await getState();
             
             // Re-usamos la lógica de tickets.js
-            const result = addTicket(state, type, docId, false); // isHigh = false por defecto
+            const result = addTicket(state, docId, 'normal', type);
             
-            if (result.success) {
+            if (result && result.ticket) {
                 // Asignar automáticamente si hay un módulo libre
                 autoAssignToFreeModules(state);
                 await setState(state);
@@ -437,7 +441,7 @@ if (btnQuickTicket) {
                     quickTicketMsg.style.display = 'none';
                 }, 4000);
             } else {
-                alert(result.message || 'Error al generar el turno.');
+                alert('Error al generar el turno.');
             }
         } catch (error) {
             console.error("Error al generar ficha rápida:", error);
