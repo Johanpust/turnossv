@@ -213,7 +213,7 @@ function startServiceTimer(startTime) {
     if (!startTime) return;
 
     function tick() {
-        const diff      = Date.now() - startTime;
+        const diff      = Math.max(0, Date.now() - startTime);
         const totalSecs = Math.floor(diff / 1000);
         const mins = String(Math.floor(totalSecs / 60)).padStart(2, '0');
         const secs = String(totalSecs % 60).padStart(2, '0');
