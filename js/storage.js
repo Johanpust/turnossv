@@ -194,6 +194,8 @@ function resetState() {
         }
 
         fresh.settings = current.settings || DEFAULT_STATE.settings;
+        fresh.schedules = current.schedules || DEFAULT_STATE.schedules;
+        fresh.lastScheduleTrigger = current.lastScheduleTrigger || DEFAULT_STATE.lastScheduleTrigger;
 
         return setState(fresh);
     });
@@ -255,6 +257,8 @@ async function checkAndAutoReset() {
     }
 
     fresh.settings       = state.settings || DEFAULT_STATE.settings;
+    fresh.schedules      = state.schedules || DEFAULT_STATE.schedules;
+    fresh.lastScheduleTrigger = state.lastScheduleTrigger || DEFAULT_STATE.lastScheduleTrigger;
     fresh.lastResetDate  = todayStr;
 
     await setState(fresh);

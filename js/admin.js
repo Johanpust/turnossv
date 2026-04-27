@@ -563,6 +563,14 @@ function renderCharts(modIds, summary) {
         document.getElementById('sh2-end').value = '';
         document.querySelectorAll('.sh2-type').forEach(cb => cb.checked = false);
 
+        document.getElementById('sh3-start').value = '';
+        document.getElementById('sh3-end').value = '';
+        document.querySelectorAll('.sh3-type').forEach(cb => cb.checked = false);
+
+        document.getElementById('sh4-start').value = '';
+        document.getElementById('sh4-end').value = '';
+        document.querySelectorAll('.sh4-type').forEach(cb => cb.checked = false);
+
         if (sched.shifts.length > 0) {
             document.getElementById('sh1-start').value = sched.shifts[0].start || '';
             document.getElementById('sh1-end').value = sched.shifts[0].end || '';
@@ -578,6 +586,24 @@ function renderCharts(modIds, summary) {
             const types2 = sched.shifts[1].types || [];
             document.querySelectorAll('.sh2-type').forEach(cb => {
                 if (types2.includes(cb.value)) cb.checked = true;
+            });
+        }
+
+        if (sched.shifts.length > 2) {
+            document.getElementById('sh3-start').value = sched.shifts[2].start || '';
+            document.getElementById('sh3-end').value = sched.shifts[2].end || '';
+            const types3 = sched.shifts[2].types || [];
+            document.querySelectorAll('.sh3-type').forEach(cb => {
+                if (types3.includes(cb.value)) cb.checked = true;
+            });
+        }
+
+        if (sched.shifts.length > 3) {
+            document.getElementById('sh4-start').value = sched.shifts[3].start || '';
+            document.getElementById('sh4-end').value = sched.shifts[3].end || '';
+            const types4 = sched.shifts[3].types || [];
+            document.querySelectorAll('.sh4-type').forEach(cb => {
+                if (types4.includes(cb.value)) cb.checked = true;
             });
         }
     }
@@ -615,6 +641,20 @@ function renderCharts(modIds, summary) {
             const sh2Types = Array.from(document.querySelectorAll('.sh2-type:checked')).map(cb => cb.value);
             if (sh2Start || sh2End) {
                 shifts.push({ start: sh2Start, end: sh2End, types: sh2Types });
+            }
+
+            const sh3Start = document.getElementById('sh3-start').value;
+            const sh3End = document.getElementById('sh3-end').value;
+            const sh3Types = Array.from(document.querySelectorAll('.sh3-type:checked')).map(cb => cb.value);
+            if (sh3Start || sh3End) {
+                shifts.push({ start: sh3Start, end: sh3End, types: sh3Types });
+            }
+
+            const sh4Start = document.getElementById('sh4-start').value;
+            const sh4End = document.getElementById('sh4-end').value;
+            const sh4Types = Array.from(document.querySelectorAll('.sh4-type:checked')).map(cb => cb.value);
+            if (sh4Start || sh4End) {
+                shifts.push({ start: sh4Start, end: sh4End, types: sh4Types });
             }
 
             state.schedules[moduleId] = {

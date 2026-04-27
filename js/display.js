@@ -311,6 +311,7 @@ onStateChange((newState) => {
 // Inicialización
 // -----------------------------------------------------------------
 startClock();
+checkAndAutoReset(); // Chequeo inicial de reinicio
 refreshDisplay();
 
 // Intentar un desbloqueo automático poco después de la inicialización
@@ -320,6 +321,7 @@ setTimeout(attemptAutoUnlockAudio, 50);
 // checkSchedules: Ejecutado cada 20 segundos para automatizar la activación/desactivación de módulos
 // -----------------------------------------------------------------
 async function checkSchedules() {
+    await checkAndAutoReset(); // Asegurar reinicio diario automático
     const state = await getState();
     if (!state.schedules) return;
 
