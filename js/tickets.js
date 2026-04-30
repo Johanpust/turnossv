@@ -193,6 +193,8 @@ function completeCurrentTicket(state, moduleId) {
         attendingAt: mod.attendingAt || null,
         finishedAt: finishedAt
     });
+    // Limitar a los últimos 10 registros para no inflar el estado
+    if (mod.finishedTickets.length > 10) mod.finishedTickets = mod.finishedTickets.slice(-10);
 
     // Persistir en Supabase para el reporte diario
     if (typeof logAttendance === 'function') {
@@ -235,6 +237,8 @@ function callCurrentTicket(state, moduleId) {
         docId: mod.currentDocId,
         calledAt: mod.calledAt
     });
+    // Limitar a los últimos 10 registros para no inflar el estado
+    if (mod.callLogs.length > 10) mod.callLogs = mod.callLogs.slice(-10);
 
     const record = {
         ticket: mod.currentTicket,

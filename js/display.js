@@ -21,6 +21,10 @@ const audioOverlay       = document.getElementById('audio-overlay');
 let lastCalledAtMap = {};
 for (let i = 1; i <= 7; i++) lastCalledAtMap[i] = 0;
 
+// Copia local del estado — se actualiza gratis por WebSocket (Realtime)
+// Evita llamar getState() desde el display cada 20s (principal causa de Egress excesivo)
+let latestState = null;
+
 // Contexto de audio compartido (se crea al primer click del usuario)
 let sharedAudioCtx = null;
 let audioUnlocked  = false;
@@ -282,9 +286,12 @@ function renderWaitingQueue(state) {
 
 // -----------------------------------------------------------------
 // refreshDisplay: Carga el estado inicial desde Supabase.
+// Solo se llama UNA VEZ al iniciar. Los updates posteriores llegan
+// por WebSocket (Realtime) sin costo de Egress adicional.
 // -----------------------------------------------------------------
 function refreshDisplay() {
     getState().then((state) => {
+        latestState = state; // Guardar copia local
         // Sincronizar mapa inicial para no disparar sonido al cargar
         for (let i = 1; i <= 7; i++) {
             if (state.modules[i]) {
@@ -300,8 +307,10 @@ function refreshDisplay() {
 
 // -----------------------------------------------------------------
 // Sincronización en tiempo real (WebSocket via Supabase Realtime)
+// Los datos llegan por WebSocket — sin costo de Egress adicional.
 // -----------------------------------------------------------------
 onStateChange((newState) => {
+    latestState = newState; // Mantener copia local actualizada
     checkForNewCalls(newState);
     renderModules(newState);
     renderWaitingQueue(newState);
@@ -318,11 +327,23 @@ refreshDisplay();
 setTimeout(attemptAutoUnlockAudio, 50);
 
 // -----------------------------------------------------------------
-// checkSchedules: Ejecutado cada 20 segundos para automatizar la activación/desactivación de módulos
+// checkSchedules: Ejecutado cada 60 segundos para automatizar la
+// activación/desactivación de módulos por horario.
+//
+// OPTIMIZACIÓN DE EGRESS:
+// Ahora usa `latestState` (copia local actualizada por WebSocket)
+// en lugar de llamar getState() desde Supabase en cada ciclo.
+// Solo llama setState() si realmente hay un cambio de horario,
+// lo que reduce el tráfico de datos drásticamente.
 // -----------------------------------------------------------------
 async function checkSchedules() {
-    await checkAndAutoReset(); // Asegurar reinicio diario automático
-    const state = await getState();
+    // Primero verificar reinicio diario — solo lee si latestState no existe
+    if (!latestState) {
+        await checkAndAutoReset();
+        return; // checkAndAutoReset ya llama a getState internamente si es necesario
+    }
+    
+    const state = latestState; // Usar copia local — sin costo de Egress
     if (!state.schedules) return;
 
     const now = new Date();
@@ -330,12 +351,21 @@ async function checkSchedules() {
     const mm = String(now.getMinutes()).padStart(2, '0');
     const currentTime = `${hh}:${mm}`;
 
+    // Verificar reinicio automático del día (comparar fecha local)
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    if (state.lastResetDate && state.lastResetDate !== todayStr) {
+        // Nuevo día detectado — hacer fetch completo y reiniciar
+        console.log('🔄 Nuevo día detectado en checkSchedules. Reiniciando...');
+        await checkAndAutoReset();
+        return;
+    }
+
     let stateModified = false;
-    
+
     // Check if we already triggered for this exact minute
     const dateStr = now.toDateString();
     if (state.lastScheduleTrigger && state.lastScheduleTrigger.date === dateStr && state.lastScheduleTrigger.time === currentTime) {
-        return; // Already processed this minute
+        return; // Ya procesado este minuto
     }
 
     for (let i = 1; i <= 7; i++) {
@@ -377,6 +407,7 @@ async function checkSchedules() {
     }
 
     if (stateModified) {
+        // Solo hace un viaje de escritura a Supabase cuando hay un cambio real
         state.lastScheduleTrigger = { date: dateStr, time: currentTime };
         if (typeof autoAssignToFreeModules === 'function') {
             autoAssignToFreeModules(state);
@@ -385,5 +416,7 @@ async function checkSchedules() {
     }
 }
 
-setInterval(checkSchedules, 20000);
+// Intervalo aumentado de 20s a 60s — más que suficiente para detectar
+// cambios de horario con un minuto de precisión.
+setInterval(checkSchedules, 60000);
 checkSchedules();
