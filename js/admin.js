@@ -220,7 +220,16 @@ async function toggleModuleType(moduleId, type, enabled) {
 }
 
 // -----------------------------------------------------------------
-// Botón: Activar todos los módulos
+// clearShift: Limpia los campos de un turno específico (1-4)
+// sin afectar los otros turnos del módulo.
+// -----------------------------------------------------------------
+function clearShift(shiftNum) {
+    document.getElementById(`sh${shiftNum}-start`).value = '';
+    document.getElementById(`sh${shiftNum}-end`).value   = '';
+    document.querySelectorAll(`.sh${shiftNum}-type`).forEach(cb => cb.checked = false);
+}
+
+
 // -----------------------------------------------------------------
 btnActivateAll.addEventListener('click', async () => {
     const state = await getState();
