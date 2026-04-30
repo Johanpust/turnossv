@@ -22,8 +22,9 @@ let lastCalledAtMap = {};
 for (let i = 1; i <= 7; i++) lastCalledAtMap[i] = 0;
 
 // Copia local del estado — se actualiza gratis por WebSocket (Realtime)
-// Evita llamar getState() desde el display cada 20s (principal causa de Egress excesivo)
+// Evita llamar getState() desde el display cada 60s (principal causa de Egress excesivo)
 let latestState = null;
+let latestStateUpdatedAt = 0; // Timestamp de la última actualización del estado local
 
 // Contexto de audio compartido (se crea al primer click del usuario)
 let sharedAudioCtx = null;
@@ -291,7 +292,8 @@ function renderWaitingQueue(state) {
 // -----------------------------------------------------------------
 function refreshDisplay() {
     getState().then((state) => {
-        latestState = state; // Guardar copia local
+        latestState = state;           // Guardar copia local
+        latestStateUpdatedAt = Date.now();
         // Sincronizar mapa inicial para no disparar sonido al cargar
         for (let i = 1; i <= 7; i++) {
             if (state.modules[i]) {
@@ -310,7 +312,8 @@ function refreshDisplay() {
 // Los datos llegan por WebSocket — sin costo de Egress adicional.
 // -----------------------------------------------------------------
 onStateChange((newState) => {
-    latestState = newState; // Mantener copia local actualizada
+    latestState = newState;            // Mantener copia local actualizada
+    latestStateUpdatedAt = Date.now(); // Registrar cuándo fue el último update
     checkForNewCalls(newState);
     renderModules(newState);
     renderWaitingQueue(newState);
@@ -337,13 +340,23 @@ setTimeout(attemptAutoUnlockAudio, 50);
 // lo que reduce el tráfico de datos drásticamente.
 // -----------------------------------------------------------------
 async function checkSchedules() {
-    // Primero verificar reinicio diario — solo lee si latestState no existe
-    if (!latestState) {
-        await checkAndAutoReset();
-        return; // checkAndAutoReset ya llama a getState internamente si es necesario
+    // Si no hay estado local O el WebSocket lleva más de 3 min sin actualizar
+    // (conexión caída), hacer fetch completo como fallback seguro.
+    const staleThresholdMs = 3 * 60 * 1000; // 3 minutos
+    const isStale = !latestState || (Date.now() - latestStateUpdatedAt) > staleThresholdMs;
+
+    if (isStale) {
+        console.log('⚠️ Estado local desactualizado. Haciendo fetch desde Supabase...');
+        try {
+            latestState = await getState();
+            latestStateUpdatedAt = Date.now();
+        } catch(e) {
+            console.error('Error en fallback getState():', e);
+            return;
+        }
     }
-    
-    const state = latestState; // Usar copia local — sin costo de Egress
+
+    const state = latestState;
     if (!state.schedules) return;
 
     const now = new Date();

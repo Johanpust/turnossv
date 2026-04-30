@@ -133,8 +133,39 @@ Pega esto dentro y guarda (`Ctrl+X` → `Y` → `Enter`):
 [Desktop Entry]
 Type=Application
 Name=Pantalla Turnos
-Exec=chromium-browser --autoplay-policy=no-user-gesture-required https://turnossv.vercel.app/display.html
+Exec=chromium-browser --kiosk --noerrdialogs --disable-infobars --no-first-run --autoplay-policy=no-user-gesture-required --disable-session-crashed-bubble --disable-restore-session-state https://turnossv.vercel.app/display
 X-GNOME-Autostart-enabled=true
+```
+
+> ⚠️ **IMPORTANTE:** La URL es `/display` sin `.html` — Vercel elimina la extensión automáticamente.
+
+---
+
+## Pantalla negra al encender (HDMI sin señal)
+
+Si el Pi enciende con la pantalla negra (solo se ve el cursor), el Raspberry Pi no está
+detectando el TV por HDMI correctamente. Solución permanente:
+
+```bash
+sudo nano /boot/config.txt
+```
+
+Agrega o descomenta estas líneas al final:
+
+```
+# Forzar salida HDMI aunque no haya monitor detectado
+hdmi_force_hotplug=1
+hdmi_drive=2
+
+# Si la pantalla sigue en negro, agregar también:
+hdmi_group=1
+hdmi_mode=16
+```
+
+Guarda (`Ctrl+X` → `Y` → `Enter`) y reinicia:
+
+```bash
+sudo reboot
 ```
 
 ---
