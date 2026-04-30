@@ -328,21 +328,35 @@ refreshDisplay();
 
 // Intentar un desbloqueo automático poco después de la inicialización
 setTimeout(attemptAutoUnlockAudio, 50);
-
 // -----------------------------------------------------------------
-// checkSchedules: Ejecutado cada 60 segundos para automatizar la
-// activación/desactivación de módulos por horario.
+// checkSchedules: Verifica horarios automáticos cada 20 segundos.
 //
-// OPTIMIZACIÓN DE EGRESS:
-// Ahora usa `latestState` (copia local actualizada por WebSocket)
-// en lugar de llamar getState() desde Supabase en cada ciclo.
-// Solo llama setState() si realmente hay un cambio de horario,
-// lo que reduce el tráfico de datos drásticamente.
+// LÓGICA ANTI-FALLO:
+//   En lugar de comparar si currentTime === shift.start exactamente
+//   (lo cual puede fallar si el interval no coincide al segundo justo),
+//   se rastrea el último minuto chequeado localmente. Si el horario cae
+//   en el rango (lastCheckMinute, currentMinute], se dispara aunque
+//   el interval se haya demorado o adelantado.
+//   Esto garantiza que NINGÚN minuto se salte jamás.
+//
+// EFICIENCIA:
+//   Usa latestState (copia local, actualizada gratis por WebSocket).
+//   Solo llama setState() si hay un cambio real de horario.
 // -----------------------------------------------------------------
+
+let _lastScheduleCheckMinute = null; // "HH:MM" del último ciclo procesado
+
+function _timeInWindow(targetTime, fromTime, toTime) {
+    // Retorna true si targetTime cae en el rango (fromTime, toTime]
+    // Si es el primer ciclo (fromTime=null), solo chequea igualdad exacta
+    if (!fromTime) return targetTime === toTime;
+    return targetTime > fromTime && targetTime <= toTime;
+}
+
 async function checkSchedules() {
     // Si no hay estado local O el WebSocket lleva más de 3 min sin actualizar
-    // (conexión caída), hacer fetch completo como fallback seguro.
-    const staleThresholdMs = 3 * 60 * 1000; // 3 minutos
+    // (conexión caída), hacer fetch completo como fallback.
+    const staleThresholdMs = 3 * 60 * 1000;
     const isStale = !latestState || (Date.now() - latestStateUpdatedAt) > staleThresholdMs;
 
     if (isStale) {
@@ -359,47 +373,57 @@ async function checkSchedules() {
     const state = latestState;
     if (!state.schedules) return;
 
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mm = String(now.getMinutes()).padStart(2, '0');
-    const currentTime = `${hh}:${mm}`;
+    const now       = new Date();
+    const hh        = String(now.getHours()).padStart(2, '0');
+    const mm        = String(now.getMinutes()).padStart(2, '0');
+    const currentMinute = `${hh}:${mm}`;
 
-    // Verificar reinicio automático del día (comparar fecha local)
+    // Verificar reinicio automático del día
     const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     if (state.lastResetDate && state.lastResetDate !== todayStr) {
-        // Nuevo día detectado — hacer fetch completo y reiniciar
         console.log('🔄 Nuevo día detectado en checkSchedules. Reiniciando...');
+        _lastScheduleCheckMinute = null;
+        latestState = null; // Forzar re-fetch tras reset
         await checkAndAutoReset();
         return;
     }
 
-    let stateModified = false;
+    // Guardar ventana del ciclo actual antes de actualizar
+    const prevMinute    = _lastScheduleCheckMinute;
+    _lastScheduleCheckMinute = currentMinute;
 
-    // Check if we already triggered for this exact minute
+    // Deduplicación entre múltiples pestañas/dispositivos:
+    // Si ya se procesó este minuto desde OTRA instancia (e.g. otro Raspberry),
+    // no volver a disparar.
     const dateStr = now.toDateString();
-    if (state.lastScheduleTrigger && state.lastScheduleTrigger.date === dateStr && state.lastScheduleTrigger.time === currentTime) {
-        return; // Ya procesado este minuto
+    if (
+        state.lastScheduleTrigger &&
+        state.lastScheduleTrigger.date === dateStr &&
+        state.lastScheduleTrigger.time === currentMinute
+    ) {
+        return; // Ya procesado por otra instancia en este ciclo
     }
+
+    let stateModified = false;
 
     for (let i = 1; i <= 7; i++) {
         const sched = state.schedules[i];
-        const mod = state.modules[i];
+        const mod   = state.modules[i];
         if (!sched || !sched.enabled || !mod) continue;
 
         for (const shift of sched.shifts) {
-            // Activar si es la hora de inicio exacta
-            if (shift.start === currentTime) {
-                mod.active = true;
-                mod.paused = false;
-                mod.allowedTypes = shift.types && shift.types.length > 0 ? shift.types : ['E', 'A', 'V', 'B'];
-                stateModified = true;
-                console.log(`⏱️ Módulo ${i} activado automáticamente (Turno: ${shift.start} - ${shift.end})`);
+            // Activar si shift.start cae dentro de la ventana (prevMinute, currentMinute]
+            if (_timeInWindow(shift.start, prevMinute, currentMinute) && !mod.active) {
+                mod.active       = true;
+                mod.paused       = false;
+                mod.allowedTypes = (shift.types && shift.types.length > 0) ? shift.types : ['E', 'A', 'V', 'B'];
+                stateModified    = true;
+                console.log(`⏱️ Módulo ${i} ACTIVADO automáticamente (horario: ${shift.start})`);
             }
-            // Desactivar si es la hora de fin exacta
-            else if (shift.end === currentTime) {
+            // Desactivar si shift.end cae dentro de la ventana (prevMinute, currentMinute]
+            else if (_timeInWindow(shift.end, prevMinute, currentMinute) && mod.active) {
                 mod.active = false;
                 mod.paused = false;
-                // Devolver turno actual a la cola si tiene
                 if (mod.currentTicket) {
                     state.queue.unshift({
                         ticket:    mod.currentTicket,
@@ -414,14 +438,13 @@ async function checkSchedules() {
                     mod.calledAt          = null;
                 }
                 stateModified = true;
-                console.log(`⏱️ Módulo ${i} desactivado automáticamente (Fin de turno: ${shift.end})`);
+                console.log(`⏱️ Módulo ${i} DESACTIVADO automáticamente (horario: ${shift.end})`);
             }
         }
     }
 
     if (stateModified) {
-        // Solo hace un viaje de escritura a Supabase cuando hay un cambio real
-        state.lastScheduleTrigger = { date: dateStr, time: currentTime };
+        state.lastScheduleTrigger = { date: dateStr, time: currentMinute };
         if (typeof autoAssignToFreeModules === 'function') {
             autoAssignToFreeModules(state);
         }
@@ -429,7 +452,7 @@ async function checkSchedules() {
     }
 }
 
-// Intervalo aumentado de 20s a 60s — más que suficiente para detectar
-// cambios de horario con un minuto de precisión.
-setInterval(checkSchedules, 60000);
+// Cada 20 segundos — barato porque usa latestState, no Supabase directo.
+// A 20s se tienen 3 chances por minuto → nunca se pierde un horario.
+setInterval(checkSchedules, 20000);
 checkSchedules();
