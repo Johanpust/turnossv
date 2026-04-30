@@ -445,9 +445,7 @@ async function checkSchedules() {
 
     if (stateModified) {
         state.lastScheduleTrigger = { date: dateStr, time: currentMinute };
-        if (typeof autoAssignToFreeModules === 'function') {
-            autoAssignToFreeModules(state);
-        }
+        // No auto-asignar: el operador controla el ritmo con 'Siguiente'
         await setState(state);
     }
 }

@@ -140,10 +140,8 @@ async function generateTicket(priority) {
     const state = await getState();
 
     const ticket = addTicket(state, docId, priority, type);
-    autoAssignToFreeModules(state);
-    
+    // No se auto-asigna: el operador controla el ritmo con 'Siguiente'
     const waitMinutes = calculateEstimatedWaitTime(state);
-    
     await setState(state);
 
     showConfirmation(ticket.ticket, type, priority, waitMinutes);

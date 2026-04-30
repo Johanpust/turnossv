@@ -76,11 +76,11 @@ function updateUI(state) {
     qiTotal.textContent  = getTotalInQueue(state);
 
     if (!mod.active) {
-        applyModuleState('inactive', mod);
+        applyModuleState('inactive', mod, state);
     } else if (mod.paused) {
-        applyModuleState('paused', mod);
+        applyModuleState('paused', mod, state);
     } else {
-        applyModuleState('active', mod);
+        applyModuleState('active', mod, state);
     }
 }
 
@@ -89,7 +89,7 @@ function setBadge(el, badgeClass, dotClass, label) {
     el.innerHTML = `<span class="dot ${dotClass}"></span> ${label}`;
 }
 
-function applyModuleState(status, mod) {
+function applyModuleState(status, mod, state) {
     turnoCard.classList.remove('has-ticket', 'is-paused', 'is-inactive');
 
     if (status === 'inactive') {
@@ -149,8 +149,12 @@ function applyModuleState(status, mod) {
                 btnLlamar.classList.add('has-ticket');
             }
         } else {
-            showEmptyState('Esperando próximo turno en cola...');
-            setButtonsEnabled(false, false, false, true);
+            const allowedTypes = mod.allowedTypes || ['E', 'A', 'V', 'B'];
+            const hasNext = peekNextTicket(state, allowedTypes) !== null;
+            showEmptyState(hasNext
+                ? '✅ Hay turnos en cola — Presiona Siguiente para atender.'
+                : 'Esperando próximo turno en cola...');
+            setButtonsEnabled(false, false, hasNext, true);
             btnLlamar.classList.remove('has-ticket');
             serviceDetails.querySelector('.detail-card').style.display = 'none';
             stopServiceTimer();
@@ -349,10 +353,8 @@ btnPausa.addEventListener('click', async () => {
     if (!mod.active) return;
 
     mod.paused = !mod.paused;
-
-    if (!mod.paused) {
-        autoAssignToFreeModules(state);
-    }
+    // El operador controla el ritmo: no auto-asignar al reanudar.
+    // El operador debe presionar 'Siguiente' para recibir el próximo turno.
 
     await setState(state);
     updateUI(state);
@@ -423,23 +425,16 @@ if (btnQuickTicket) {
         
         try {
             const state = await getState();
-            
-            // Re-usamos la lógica de tickets.js
             const result = addTicket(state, docId, 'normal', type);
             
             if (result && result.ticket) {
-                // Asignar automáticamente si hay un módulo libre
-                autoAssignToFreeModules(state);
-                
                 const waitMinutes = calculateEstimatedWaitTime(state);
-                
                 await setState(state);
                 
                 quickDocInput.value = '';
                 quickTicketMsg.style.display = 'block';
                 quickTicketMsg.textContent = `✅ Ficha ${result.ticket} generada (Espera: ~${waitMinutes}m)`;
                 
-                // Ocultar mensaje después de 4 segundos
                 setTimeout(() => {
                     quickTicketMsg.style.display = 'none';
                 }, 4000);

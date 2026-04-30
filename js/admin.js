@@ -185,7 +185,7 @@ async function toggleModule(moduleId, activate) {
         }
     } else {
         mod.active = true;
-        autoAssignToFreeModules(state);
+        // No auto-asignar: el operador controla el ritmo con 'Siguiente'
     }
 
     await setState(state);
@@ -236,7 +236,7 @@ btnActivateAll.addEventListener('click', async () => {
     for (let i = 1; i <= 7; i++) {
         if (state.modules[i]) state.modules[i].active = true;
     }
-    autoAssignToFreeModules(state);
+    // No auto-asignar: cada operador elige cuándo recibir el próximo turno
     await setState(state);
     await refreshUI();
 });

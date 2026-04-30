@@ -100,11 +100,24 @@ function peekNextTicket(state, allowedTypes) {
 // Alta prioridad primero.
 // -----------------------------------------------------------------
 function dequeueNextTicket(state, allowedTypes) {
+    // 1. Cola de alta prioridad manual — siempre primero
     const highMatch = getFirstMatchingTicket(state.highQueue, allowedTypes);
     if (highMatch) {
         state.highQueue.splice(highMatch.index, 1);
         return highMatch.ticket;
     }
+
+    // 2. Tipo A tiene prioridad automática sobre E, V, B
+    //    (Activación de citas no puede esperar igual que los demás)
+    if (allowedTypes.includes('A')) {
+        const aMatch = getFirstMatchingTicket(state.queue, ['A']);
+        if (aMatch) {
+            state.queue.splice(aMatch.index, 1);
+            return aMatch.ticket;
+        }
+    }
+
+    // 3. Resto de tipos en orden de llegada (FIFO)
     const normalMatch = getFirstMatchingTicket(state.queue, allowedTypes);
     if (normalMatch) {
         state.queue.splice(normalMatch.index, 1);
@@ -180,44 +193,47 @@ function autoAssignToFreeModules(state) {
 // -----------------------------------------------------------------
 function completeCurrentTicket(state, moduleId) {
     const mod = state.modules[moduleId];
-    if (!mod.currentTicket) return;
 
-    const finishedAt = Date.now();
+    // Solo registrar y limpiar si hay un turno activo en este módulo
+    if (mod.currentTicket) {
+        const finishedAt = Date.now();
 
-    if (!mod.finishedTickets) mod.finishedTickets = [];
-    mod.finishedTickets.push({
-        ticket:     mod.currentTicket,
-        type:       mod.currentTicketType,
-        docId:      mod.currentDocId,
-        assignedAt: mod.assignedAt,
-        attendingAt: mod.attendingAt || null,
-        finishedAt: finishedAt
-    });
-    // Limitar a los últimos 10 registros para no inflar el estado
-    if (mod.finishedTickets.length > 10) mod.finishedTickets = mod.finishedTickets.slice(-10);
-
-    // Persistir en Supabase para el reporte diario
-    if (typeof logAttendance === 'function') {
-        logAttendance({
-            moduleId:    moduleId,
-            ticket:      mod.currentTicket,
-            ticketType:  mod.currentTicketType,
-            docId:       mod.currentDocId,
-            assignedAt:  mod.assignedAt   || null,
-            attendingAt: mod.attendingAt  || null,
-            finishedAt:  finishedAt
+        if (!mod.finishedTickets) mod.finishedTickets = [];
+        mod.finishedTickets.push({
+            ticket:     mod.currentTicket,
+            type:       mod.currentTicketType,
+            docId:      mod.currentDocId,
+            assignedAt: mod.assignedAt,
+            attendingAt: mod.attendingAt || null,
+            finishedAt: finishedAt
         });
+        if (mod.finishedTickets.length > 10) mod.finishedTickets = mod.finishedTickets.slice(-10);
+
+        if (typeof logAttendance === 'function') {
+            logAttendance({
+                moduleId:    moduleId,
+                ticket:      mod.currentTicket,
+                ticketType:  mod.currentTicketType,
+                docId:       mod.currentDocId,
+                assignedAt:  mod.assignedAt   || null,
+                attendingAt: mod.attendingAt  || null,
+                finishedAt:  finishedAt
+            });
+        }
+
+        mod.currentTicket     = null;
+        mod.currentTicketType = null;
+        mod.currentDocId      = null;
+        mod.calledAt          = null;
+        mod.isAttending       = false;
+        mod.assignedAt        = 0;
+        mod.attendingAt       = null;
     }
 
-    mod.currentTicket     = null;
-    mod.currentTicketType = null;
-    mod.currentDocId      = null;
-    mod.calledAt          = null;
-    mod.isAttending       = false;
-    mod.assignedAt        = 0;
-    mod.attendingAt       = null;
-
-    autoAssignToFreeModules(state);
+    // Modelo pull: asignar el siguiente turno SOLO a este módulo.
+    // No se distribuye a todos los módulos libres — el operador
+    // controla el ritmo presionando 'Siguiente'.
+    assignTicketToModule(state, moduleId);
 }
 
 // -----------------------------------------------------------------
