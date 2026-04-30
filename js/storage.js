@@ -227,7 +227,11 @@ function onStateChange(callback) {
         )
         .subscribe((status) => {
             if (status === 'SUBSCRIBED') {
-                console.log('\u2705 Conectado al canal de tiempo real de Supabase');
+                console.log('✅ Conectado al canal de tiempo real de Supabase');
+            }
+            if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+                console.warn('⚠️ Conexión Realtime perdida. Reintentando en 2s...');
+                setTimeout(() => onStateChange(callback), 2000);
             }
         });
 }

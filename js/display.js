@@ -354,9 +354,9 @@ function _timeInWindow(targetTime, fromTime, toTime) {
 }
 
 async function checkSchedules() {
-    // Si no hay estado local O el WebSocket lleva más de 3 min sin actualizar
-    // (conexión caída), hacer fetch completo como fallback.
-    const staleThresholdMs = 3 * 60 * 1000;
+    // Si no hay estado local O el WebSocket lleva más de 15 segundos sin actualizar
+    // (conexión caída o Realtime lento en Raspberry), hacer fetch completo como fallback.
+    const staleThresholdMs = 15 * 1000; // 15 segundos (más agresivo para el Display)
     const isStale = !latestState || (Date.now() - latestStateUpdatedAt) > staleThresholdMs;
 
     if (isStale) {
