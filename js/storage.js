@@ -205,8 +205,14 @@ function resetState() {
 // onStateChange: Registra un callback que se ejecuta cuando
 // CUALQUIER cliente actualiza el estado (tiempo real via WebSocket).
 // -----------------------------------------------------------------
+let stateChannel = null;
+
 function onStateChange(callback) {
-    supabaseClient
+    if (stateChannel) {
+        stateChannel.unsubscribe();
+    }
+
+    stateChannel = supabaseClient
         .channel('app_state_changes')
         .on(
             'postgres_changes',
@@ -230,8 +236,8 @@ function onStateChange(callback) {
                 console.log('✅ Conectado al canal de tiempo real de Supabase');
             }
             if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-                console.warn('⚠️ Conexión Realtime perdida. Reintentando en 2s...');
-                setTimeout(() => onStateChange(callback), 2000);
+                console.warn('⚠️ Conexión Realtime perdida o cerrada. Reintentando en 3s...');
+                setTimeout(() => onStateChange(callback), 3000);
             }
         });
 }
