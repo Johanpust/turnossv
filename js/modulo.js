@@ -50,6 +50,7 @@ const searchCalls         = document.getElementById('search-calls');
 const btnToggleAttended   = document.getElementById('btn-toggle-attended');
 const attendedContent     = document.getElementById('attended-content');
 const finishedTicketsLog  = document.getElementById('finished-tickets-log');
+const typeCheckboxes      = document.querySelectorAll('.mod-type-checkbox');
 
 let timerInterval = null;
 let currentSearchQuery = '';
@@ -74,6 +75,12 @@ function updateUI(state) {
     qiHigh.textContent   = state.highQueue.length;
     qiNormal.textContent = state.queue.length;
     qiTotal.textContent  = getTotalInQueue(state);
+
+    if (mod.allowedTypes) {
+        typeCheckboxes.forEach(cb => {
+            cb.checked = mod.allowedTypes.includes(cb.value);
+        });
+    }
 
     if (!mod.active) {
         applyModuleState('inactive', mod, state);
@@ -384,6 +391,30 @@ btnToggleAttended.addEventListener('click', () => {
     const isVisible = attendedContent.style.display === 'block';
     attendedContent.style.display = isVisible ? 'none' : 'block';
     btnToggleAttended.classList.toggle('active', !isVisible);
+});
+
+// -----------------------------------------------------------------
+// Actualizar Tipos Permitidos desde Checkboxes
+// -----------------------------------------------------------------
+typeCheckboxes.forEach(cb => {
+    cb.addEventListener('change', async () => {
+        const state = await getState();
+        const mod = state.modules[moduleId];
+        if (!mod) return;
+        
+        const newAllowed = Array.from(typeCheckboxes)
+                                .filter(c => c.checked)
+                                .map(c => c.value);
+        
+        if (newAllowed.length === 0) {
+            alert('Debes seleccionar al menos un tipo de turno.');
+            cb.checked = true; // Revertir
+            return;
+        }
+
+        mod.allowedTypes = newAllowed;
+        await setState(state);
+    });
 });
 
 // -----------------------------------------------------------------
