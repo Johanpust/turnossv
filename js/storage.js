@@ -231,9 +231,17 @@ function onStateChange(callback) {
                 }
             }
         )
-        .subscribe((status) => {
+        .subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
                 console.log('✅ Conectado al canal de tiempo real de Supabase');
+                // Al conectar o reconectar, obtener el estado completo una vez
+                // para asegurar que no nos perdimos de ningún evento.
+                try {
+                    const currentState = await getState();
+                    callback(currentState);
+                } catch (e) {
+                    console.error('Error al sincronizar estado tras reconexión:', e);
+                }
             }
             if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
                 console.warn('⚠️ Conexión Realtime perdida o cerrada. Reintentando en 3s...');

@@ -354,24 +354,8 @@ function _timeInWindow(targetTime, fromTime, toTime) {
 }
 
 async function checkSchedules() {
-    // Si no hay estado local O el WebSocket lleva más de 15 segundos sin actualizar
-    // (conexión caída o Realtime lento en Raspberry), hacer fetch completo como fallback.
-    const staleThresholdMs = 15 * 1000; // 15 segundos (más agresivo para el Display)
-    const isStale = !latestState || (Date.now() - latestStateUpdatedAt) > staleThresholdMs;
-
-    if (isStale) {
-        console.log('⚠️ Estado local desactualizado. Haciendo fetch desde Supabase...');
-        try {
-            latestState = await getState();
-            latestStateUpdatedAt = Date.now();
-        } catch(e) {
-            console.error('Error en fallback getState():', e);
-            return;
-        }
-    }
-
     const state = latestState;
-    if (!state.schedules) return;
+    if (!state || !state.schedules) return;
 
     const now       = new Date();
     const hh        = String(now.getHours()).padStart(2, '0');
